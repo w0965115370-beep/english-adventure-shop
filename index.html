@@ -129,6 +129,13 @@ label.setting input[type=checkbox]{width:28px;height:28px}
 .seat-row{display:flex;gap:10px}
 #seat{flex:1;min-width:0;font-size:28px;padding:8px 10px;text-align:center;border:3px solid var(--border);border-radius:6px;background:#fffaf0;-webkit-user-select:text;user-select:text}
 #start-btn{flex:0 0 auto;min-width:140px;font-size:20px}
+.name-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.name-btn{min-height:68px;padding:6px 8px;font-size:24px;font-weight:bold;background:#fffaf0;border:3px solid var(--border);border-radius:8px;box-shadow:0 4px 0 #0005;line-height:1.2}
+.name-btn small{display:block;font-size:12px;font-weight:normal;color:var(--muted)}
+.name-btn:active{transform:translateY(2px);box-shadow:0 2px 0 #0005}
+.name-btn:disabled{opacity:.5}
+#seat-login{margin-top:12px}
+#seat-login summary{cursor:pointer;color:var(--muted);font-size:14px;font-weight:bold;padding:4px 0}
 #title-err{color:var(--bad);font-weight:bold;min-height:1.3em;margin-top:6px;font-size:15px}
 #saves h4{margin:6px 0;font-size:14px;color:var(--muted)}
 .save-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
@@ -185,11 +192,15 @@ ol.steps{padding-left:22px;line-height:1.7;font-size:16px;margin:6px 0}
     <div class="inner">
       <h1>English Adventure Shop</h1>
       <p class="sub">英文冒險小商店</p>
-      <label for="seat">輸入你的座號</label>
-      <div class="seat-row">
-        <input id="seat" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="例如 5">
-        <button class="btn" id="start-btn">開始冒險</button>
-      </div>
+      <label>點你的名字開始</label>
+      <div class="name-grid" id="names"></div>
+      <details id="seat-login">
+        <summary>名單裡沒有你？用座號登入</summary>
+        <div class="seat-row">
+          <input id="seat" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="例如 5">
+          <button class="btn" id="start-btn">開始冒險</button>
+        </div>
+      </details>
       <div id="title-err"></div>
       <div id="saves"></div>
       <div class="title-foot">
@@ -215,6 +226,15 @@ ol.steps{padding-left:22px;line-height:1.7;font-size:16px;margin:6px 0}
    還沒設定試算表、而且這台平板從來沒讀到過試算表時才會使用。
    ===================================================================== */
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1N5J1G4KvrF7gepjn-a1Qc93G4R-N0f3S9HJbqMm0Kug/edit?gid=1877670129#gid=1877670129";
+
+// 學生名單：[座號, 名字]。登入畫面會顯示名字按鈕，學生點自己的名字就能進入遊戲（存檔仍依座號）。
+const STUDENTS = [
+  [1, "泓萱"],
+  [2, "真珣"],
+  [3, "承毅"],
+  [4, "亦凱"],
+  [5, "妤彤"],
+];
 
 const CURRENT_UNIT = "Unit 2";
 const WORDS = [
@@ -1265,7 +1285,7 @@ function talkNpc(e) {
   if (e.id === "fisher") return talk("釣魚爺爺", ["呵呵，來釣魚嗎？", "站到池塘邊的木頭碼頭上，按「釣魚」。\n魚上鉤時，等白色指針跑進綠色區域再按「拉！」。", "大魚的綠色區域比較小，但是可以賣比較多錢喔！"], [{ label: "英文挑戰", fn: () => { if (!npcQuiz(e, "釣魚爺爺")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "好", alt: true }]);
   if (e.id === "mayor") {
     if (st === 0) return talk("村長", [
-      `歡迎來到我們的村子，${S.seat} 號小老闆！`,
+      `歡迎來到我們的村子，${nameOf(S.seat)}小老闆！`,
       "村口那間破舊的商店，從今天起就交給你經營了。",
       "先到東邊的森林砍些木材吧！在森林裡會遇到英文挑戰，答對可以拿到更多材料。",
     ], null, () => advanceMain(1));
@@ -2824,10 +2844,21 @@ async function logout() {
   closeModal(); S = null; scene = null; showGameUI(false); input.reset();
   $("title").hidden = false; $("seat").value = ""; renderSaves();
 }
+const seatKey = (n) => String(Number(n)).padStart(2, "0");
+function nameOf(seat) { const st = STUDENTS.find(([n]) => seatKey(n) === seatKey(seat)); return st ? st[1] : `${Number(seat)} 號`; }
+function renderNames() {
+  $("names").innerHTML = STUDENTS.map(([n, name]) => {
+    const sv = loadSave(seatKey(n));
+    return `<button class="name-btn" data-seat="${n}">${esc(name)}<small>${sv ? `第 ${Math.floor(sv.min / DAY) + 1} 天・${sv.coins} 金` : `${n} 號・新冒險`}</small></button>`;
+  }).join("");
+  $("names").querySelectorAll("[data-seat]").forEach((b) => b.addEventListener("click", () => { $("seat").value = b.dataset.seat; begin(); }));
+}
 function renderSaves() {
-  const saves = listSaves();
+  renderNames();
+  const listed = new Set(STUDENTS.map(([n]) => seatKey(n)));
+  const saves = listSaves().filter((s) => !listed.has(seatKey(s.seat)));
   $("saves").innerHTML = saves.length ? `<h4>這台平板上的存檔（點一下繼續玩）</h4><div class="save-grid">${saves.slice(0, 9).map((s) =>
-    `<button class="save-chip" data-seat="${esc(s.seat)}"><b>座號 ${esc(s.seat)}</b><span>第 ${Math.floor(s.min / DAY) + 1} 天・${s.coins} 金</span></button>`).join("")}</div>` : "";
+    `<button class="save-chip" data-seat="${esc(s.seat)}"><b>${esc(nameOf(s.seat))}</b><span>第 ${Math.floor(s.min / DAY) + 1} 天・${s.coins} 金</span></button>`).join("")}</div>` : "";
   $("saves").querySelectorAll("[data-seat]").forEach((b) => b.addEventListener("click", () => { $("seat").value = b.dataset.seat; begin(); }));
 }
 let beginning = false;
@@ -2842,9 +2873,11 @@ async function begin() {
   let cloud = null;
   if (cloudOn()) {
     beginning = true; $("start-btn").disabled = true; $("start-btn").textContent = "讀取存檔…";
+    $("title-err").textContent = `正在讀取${nameOf(seat)}的存檔…`; document.querySelectorAll(".name-btn").forEach((b) => { b.disabled = true; });
     try { cloud = await cloudLoad(seat); }
     catch { $("title-err").textContent = "連不上雲端存檔，先使用這台平板上的進度"; await new Promise((r) => setTimeout(r, 1200)); }
     beginning = false; $("start-btn").disabled = false; $("start-btn").textContent = "開始冒險";
+    $("title-err").textContent = ""; document.querySelectorAll(".name-btn").forEach((b) => { b.disabled = false; });
   }
   // 平板上的與雲端的存檔，用比較新的那一份
   const existing = [local, cloud].filter((s) => s && s.seat === seat).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
@@ -2932,7 +2965,7 @@ $("teacher-btn").addEventListener("click", () => { Sound.init(); openTeacher(); 
 makeIcons(); makeTiles();
 $("coin-ico").src = icon("coin");
 drawTitleArt();
-if (cloudOn()) $("save-note").textContent = "進度會自動存到雲端，換平板只要輸入座號就能接著玩。";
+if (cloudOn()) $("save-note").textContent = "進度會自動存到雲端，換平板只要點自己的名字就能接著玩。";
 loadWords().then(updateWordStatus);
 updateWordStatus();
 resize(); renderSaves();
