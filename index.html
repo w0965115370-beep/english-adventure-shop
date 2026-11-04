@@ -236,6 +236,10 @@ const STUDENTS = [
   [5, "妤彤"],
 ];
 
+// 重置進度：這個時間（2026-11-04 11:21）以前建立的存檔，平板上和雲端的都不再讀取，大家從頭開始。
+// 之後想再全部重置，把數字換成新的時間（毫秒）即可；設成 0 就是不重置。
+const PROGRESS_RESET = 1793762477735;
+
 const CURRENT_UNIT = "Unit 2";
 const WORDS = [
   ["Unit 1", "apple",  "蘋果", "noun"],
@@ -601,15 +605,29 @@ const CH_LEGS_FRONT = [["....OPPOOPPO....", "....OBO..OBO....", "...............
 const CH_LEGS_SIDE  = [[".....OPPPPO.....", ".....OBOOBO.....", "................"],
                        [".....OPOOPO.....", "....OBO..OBO....", "................"],
                        [".....OPPPPO.....", ".....OBBBO......", "................"]];
+// 女生造型：長頭髮、蝴蝶結（R）、裙子
+const CG_HEAD_DOWN = ["................", ".....OOOOOO.....", "....OHHHHRRO....", "...OHHHHHHRRO...", "...OHHHHHHHHO...", "..OHHSSSSSSHHO..", "..OHSSESSESSHO..", "..OHOSSSSSSOHO.."];
+const CG_HEAD_UP   = ["................", ".....OOOOOO.....", "....OHHHHRRO....", "...OHHHHHHRRO...", "...OHHHHHHHHO...", "..OHHHHHHHHHHO..", "..OHHHHHHHHHHO..", "..OHHHHHHHHHHO.."];
+const CG_HEAD_SIDE = ["................", ".....OOOOO......", "....ORRHHHO.....", "...ORRHHHHHO....", "...OHHHHHHHO....", "..OHHHHSSSSO....", "..OHHHSSSESO....", "..OHHOSSSSO....."];
+const CG_BODY_FRONT = ["..OHOTTTTTTOHO..", "..OHSTTTTTTSHO..", "...OSTTTTTTSO...", "...OTTTTTTTTO...", "..OTTTTTTTTTTO.."];
+const CG_BODY_UP    = ["..OHHHHHHHHHHO..", "...OSHHHHHHSO...", "...OSTTTTTTSO...", "...OTTTTTTTTO...", "..OTTTTTTTTTTO.."];
+const CG_BODY_SIDE  = ["..OHOTTTTO......", "..OHOTTSTO......", ".....OTTSTO.....", "....OTTTTTTO....", "....OTTTTTTO...."];
+const CG_LEGS_FRONT = [["....OSSOOSSO....", "....OBO..OBO....", "................"],
+                       ["....OSSOOSSO....", "....OBO...OO....", "................"],
+                       ["....OSSOOSSO....", "....OO...OBO....", "................"]];
+const CG_LEGS_SIDE  = [[".....OSSSSO.....", ".....OBOOBO.....", "................"],
+                       [".....OSOOSO.....", "....OBO..OBO....", "................"],
+                       [".....OSSSSO.....", ".....OBBBO......", "................"]];
 const charCache = new Map();
 function charSprite(look, dir, frame) {
-  const k = `${look.hair}|${look.shirt}|${look.pants || ""}|${look.skin || ""}|${dir}|${frame}`;
+  const girl = look.style === "girl";
+  const k = `${look.hair}|${look.shirt}|${look.pants || ""}|${look.skin || ""}|${girl ? "g" : "b"}|${dir}|${frame}`;
   if (charCache.has(k)) return charCache.get(k);
-  const pal = { O: "#2b1d14", H: look.hair, S: look.skin || "#f2c79b", E: "#2b1d14", T: look.shirt, P: look.pants || "#3b4a6b", B: "#4a3020" };
+  const pal = { O: "#2b1d14", H: look.hair, S: look.skin || "#f2c79b", E: "#2b1d14", T: look.shirt, P: look.pants || "#3b4a6b", B: "#4a3020", R: look.ribbon || "#e0284a" };
   const side = dir === "left" || dir === "right";
-  const head = dir === "up" ? CH_HEAD_UP : side ? CH_HEAD_SIDE : CH_HEAD_DOWN;
-  const body = side ? CH_BODY_SIDE : CH_BODY_FRONT;
-  const legs = (side ? CH_LEGS_SIDE : CH_LEGS_FRONT)[frame];
+  const head = girl ? (dir === "up" ? CG_HEAD_UP : side ? CG_HEAD_SIDE : CG_HEAD_DOWN) : (dir === "up" ? CH_HEAD_UP : side ? CH_HEAD_SIDE : CH_HEAD_DOWN);
+  const body = girl ? (dir === "up" ? CG_BODY_UP : side ? CG_BODY_SIDE : CG_BODY_FRONT) : (side ? CH_BODY_SIDE : CH_BODY_FRONT);
+  const legs = (girl ? (side ? CG_LEGS_SIDE : CG_LEGS_FRONT) : (side ? CH_LEGS_SIDE : CH_LEGS_FRONT))[frame];
   const c = fromRows([...head, ...body, ...legs], pal, dir === "left");
   charCache.set(k, c);
   return c;
@@ -753,7 +771,7 @@ function buildVillage() {
   addEnt(sc, { id: "b_work", type: "building", tx: 27, ty: 4, w: 7, h: 5, solid: true, door: { x: 30, y: 8 }, closed: true, roof: "#7a6a3a", roofDark: "#544826", sign: "TOOLS" });
   addEnt(sc, { id: "mayor", type: "npc", name: "村長", tx: 17, ty: 10, solid: true, dir: "down", look: { hair: "#e8e8e8", shirt: "#3f8a5a", pants: "#5a4a3a" } });
   addEnt(sc, { id: "craft", type: "npc", name: "工匠阿木", tx: 31, ty: 10, solid: true, dir: "down", look: { hair: "#5a3a20", shirt: "#d9822b", pants: "#3a3a4a" } });
-  addEnt(sc, { id: "granny", type: "npc", name: "雜貨婆婆", tx: 23, ty: 15, solid: true, dir: "down", look: { hair: "#b8b0c8", shirt: "#9a5fb0", pants: "#6a4a7a" } });
+  addEnt(sc, { id: "granny", type: "npc", name: "雜貨婆婆", tx: 23, ty: 15, solid: true, dir: "down", look: { hair: "#b8b0c8", shirt: "#9a5fb0", pants: "#6a4a7a", style: "girl", ribbon: "#6a4a7a" } });
   addEnt(sc, { id: "fountain", type: "fountain", tx: 19, ty: 15, w: 2, h: 2, solid: true });
   setTile(sc, 19, 15, TILE.GRASS); setTile(sc, 20, 15, TILE.GRASS); setTile(sc, 19, 16, TILE.GRASS); setTile(sc, 20, 16, TILE.GRASS);
   addEnt(sc, { id: "board", type: "board", tx: 13, ty: 14, solid: true });
@@ -769,9 +787,9 @@ function buildVillage() {
   addEnt(sc, { id: "bikes", type: "bikes", tx: 24, ty: 9, solid: true });
   addEnt(sc, { id: "sign_beach", type: "sign", tx: 32, ty: 22, solid: true, text: "↓ 海邊（找村長開通）" });
   walker(sc, "w_kid", "小明", 12, 13, { hair: "#2b1d14", shirt: "#e0a020" }, ["Hi! 我是小明，我最喜歡吃 apple 了！", "Let's play! 等我寫完功課再一起玩！", "我長大也要開一間商店！"]);
-  walker(sc, "w_girl", "小花", 25, 12, { hair: "#c0442c", shirt: "#e07aa0" }, ["Good morning! 早安！", "你的商店好可愛喔！", "Thank you! 上次買的東西好棒！"]);
+  walker(sc, "w_girl", "小花", 25, 12, { hair: "#c0442c", shirt: "#e07aa0", style: "girl" }, ["Good morning! 早安！", "你的商店好可愛喔！", "Thank you! 上次買的東西好棒！"]);
   walker(sc, "w_post", "郵差阿德", 33, 13, { hair: "#5a3a20", shirt: "#3a6ab0" }, ["Hello! 今天也要努力送信。", "See you! 我要去下一家了。", "聽說森林裡有寶箱喔！"]);
-  walker(sc, "w_lady", "王阿姨", 16, 17, { hair: "#6b3a1a", shirt: "#5aa05a" }, ["Nice to meet you! 很高興認識你！", "我在找新鮮的莓果……你的店有賣嗎？", "Have a nice day! 祝你有美好的一天！"]);
+  walker(sc, "w_lady", "王阿姨", 16, 17, { hair: "#6b3a1a", shirt: "#5aa05a", style: "girl", ribbon: "#f2c230" }, ["Nice to meet you! 很高興認識你！", "我在找新鮮的莓果……你的店有賣嗎？", "Have a nice day! 祝你有美好的一天！"]);
   walker(sc, "w_boy", "阿傑", 6, 13, { hair: "#d9a03a", shirt: "#3f9a4f" }, ["Wow! 你的背包好大！", "我最喜歡釣魚了，池塘那邊有大魚！", "Goodbye! 掰掰！"]);
   sc.warps.push({ x: 8, y: 8, w: 1, h: 1, to: "shop", tx: 8, ty: 9.6, dir: "up" });
   sc.warps.push({ x: 39, y: 12, w: 1, h: 2, to: "forest", tx: 1.6, ty: 17.4, dir: "right" });
@@ -821,7 +839,7 @@ function buildBeach() {
   addEnt(sc, { id: "b_chest", type: "node", kind: "chest", loot: ["shell", "coconut"], tx: 37, ty: 14, clearTo: TILE.SAND });
   addEnt(sc, { id: "b_hut", type: "building", tx: 27, ty: 4, w: 5, h: 5, solid: true, door: { x: 29, y: 8 }, closed: true, roof: "#2a8a8a", roofDark: "#1c6060" });
   addEnt(sc, { id: "fisherman", type: "npc", name: "漁夫阿海", tx: 25, ty: 10, solid: true, dir: "down", look: { hair: "#3a2a1a", shirt: "#e8e0d0", pants: "#3a5a8a" } });
-  walker(sc, "w_tour", "遊客小美", 15, 10, { hair: "#e0b040", shirt: "#e07aa0" }, ["Hello! 我是來玩的遊客。", "海邊的貝殼好漂亮！", "Wow! 這裡的椰子好好喝！"]);
+  walker(sc, "w_tour", "遊客小美", 15, 10, { hair: "#e0b040", shirt: "#e07aa0", style: "girl", ribbon: "#3a7ad0" }, ["Hello! 我是來玩的遊客。", "海邊的貝殼好漂亮！", "Wow! 這裡的椰子好好喝！"]);
   walker(sc, "w_surf", "衝浪阿翔", 31, 12, { hair: "#c06a3a", shirt: "#3a7ad0" }, ["Cool! 今天的浪好大！", "Let's go swimming! 一起去游泳吧！", "聽說漁夫阿海知道很多事情。"]);
   sc.warps.push({ x: 19, y: 0, w: 2, h: 1, to: "village", tx: 31, ty: 23.4, dir: "up" });
   sc.spawn = { tx: 20, ty: 2.6 };
@@ -902,10 +920,19 @@ async function cloudLoad(seat) {
   const tq = `select ${CLOUD.dataCol} where ${CLOUD.seatCol} = 'S${seat}' order by A desc limit 1`;
   const table = await withTimeout(gvizTable(src.id, src.gid, tq), 9000);
   const cell = table.rows[0] && table.rows[0].c && table.rows[0].c[0] && table.rows[0].c[0].v;
-  return cell ? JSON.parse(cell) : null;
+  const sv = cell ? JSON.parse(cell) : null;
+  return freshSave(sv) ? sv : null;
 }
 function storageOK() { try { localStorage.setItem("eas1_test", "1"); localStorage.removeItem("eas1_test"); return true; } catch { return false; } }
-function loadSave(seat) { try { const raw = localStorage.getItem(SAVE_PREFIX + seat); return raw ? JSON.parse(raw) : null; } catch { return null; } }
+const freshSave = (s) => Boolean(s && (s.created || 0) >= PROGRESS_RESET);
+function loadSave(seat) {
+  try {
+    const raw = localStorage.getItem(SAVE_PREFIX + seat); if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (!freshSave(s)) { localStorage.removeItem(SAVE_PREFIX + seat); return null; }   // 重置前的舊存檔
+    return s;
+  } catch { return null; }
+}
 function writeSave() {
   if (!S) return;
   S.savedAt = Date.now();
@@ -917,7 +944,7 @@ function listSaves() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith(SAVE_PREFIX)) { const s = JSON.parse(localStorage.getItem(k)); if (s && s.seat) out.push(s); }
+      if (k && k.startsWith(SAVE_PREFIX)) { const s = JSON.parse(localStorage.getItem(k)); if (s && s.seat && freshSave(s)) out.push(s); }
     }
   } catch { /* 無法讀取 */ }
   return out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
@@ -1731,7 +1758,7 @@ function spawnCustomer() {
   const slot = wish ? (wishSlot ?? null) : stocked.length ? pick(stocked) : null;
   const target = slot !== null ? shelfStand(slot) : { x: 5 * T, y: 5.6 * T };
   const path = [{ x: 8.5 * T, y: 9.8 * T }, { x: 8.5 * T, y: target.y }, target];
-  customers.push({ x: 7.5 * T, y: 10.9 * T, look: { hair, shirt }, dir: "up", path, phase: "in", slot, wait: 0, anim: 0, bubble: null, wish });
+  customers.push({ x: 7.5 * T, y: 10.9 * T, look: { hair, shirt, style: rand() < 0.5 ? "girl" : "boy" }, dir: "up", path, phase: "in", slot, wait: 0, anim: 0, bubble: null, wish });
   Sound.sfx("door");
 }
 function shelfStand(i) { const e = scenes.shop.ents.find((x) => x.id === "shelf" + i); return { x: e.tx * T + 8, y: (e.ty + 1) * T + 9 }; }
@@ -1932,15 +1959,17 @@ function openUpgrades() {
 const HAIRS = ["#2b1d14", "#6b3a1a", "#d9a03a", "#c0442c", "#3a3a6a"];
 const SHIRTS = ["#d04a4a", "#3a7ad0", "#3f9a4f", "#e0a020", "#9a5ac0", "#e07aa0"];
 function chooseLook(cur, done) {
-  const look = { hair: cur ? cur.hair : HAIRS[0], shirt: cur ? cur.shirt : SHIRTS[1] };
+  const look = { hair: cur ? cur.hair : HAIRS[0], shirt: cur ? cur.shirt : SHIRTS[1], style: cur && cur.style === "girl" ? "girl" : "boy" };
   const render = () => {
+    const girl = look.style === "girl";
     openModal(`<h2>選擇你的樣子</h2><canvas class="preview" id="pv" width="16" height="16"></canvas>
+      <div class="btn-row" style="margin-bottom:10px"><button class="btn small ${girl ? "alt" : ""}" data-act="boy">${girl ? "" : "✓ "}男生</button><button class="btn small ${girl ? "" : "alt"}" data-act="girl">${girl ? "✓ " : ""}女生</button></div>
       <b>頭髮</b><div class="swatches">${HAIRS.map((c, i) => `<button class="swatch ${c === look.hair ? "on" : ""}" style="background:${c}" data-act="h${i}" aria-label="頭髮顏色 ${i + 1}"></button>`).join("")}</div>
       <b>衣服</b><div class="swatches">${SHIRTS.map((c, i) => `<button class="swatch ${c === look.shirt ? "on" : ""}" style="background:${c}" data-act="s${i}" aria-label="衣服顏色 ${i + 1}"></button>`).join("")}</div>
       <button class="btn" style="width:100%" data-act="ok">就是這樣！</button>`, handlers);
     $("pv").getContext("2d").drawImage(charSprite(look, "down", 0), 0, 0);
   };
-  const handlers = { ok: () => { closeModal(); done(look); } };
+  const handlers = { ok: () => { closeModal(); done(look); }, boy: () => { look.style = "boy"; render(); }, girl: () => { look.style = "girl"; render(); } };
   HAIRS.forEach((c, i) => { handlers["h" + i] = () => { look.hair = c; render(); }; });
   SHIRTS.forEach((c, i) => { handlers["s" + i] = () => { look.shirt = c; render(); }; });
   render();
