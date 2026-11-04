@@ -1,0 +1,2943 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1d2b3a">
+<title>English Adventure Shop</title>
+<style>
+:root{
+  --ink:#2b1d12; --panel:#f4e9d0; --panel2:#e8d9b5; --border:#5a3b22; --accent:#3f8f4f; --accent-dark:#1f4f2a;
+  --gold:#e8b830; --bad:#c0392b; --good:#2e8b47; --muted:#7a6a55;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#1d2b3a;color:var(--ink);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#world{position:fixed;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+
+/* HUD */
+#hud{position:fixed;top:calc(8px + var(--sat));left:calc(8px + var(--sal));display:flex;gap:6px;flex-wrap:wrap;z-index:5;pointer-events:none}
+.hud-box{background:#1d2b3acc;color:#fff4dc;border:2px solid #0d1620;border-radius:6px;padding:4px 10px;font-weight:bold;font-size:17px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.hud-box img{width:20px;height:20px;image-rendering:pixelated}
+#objective{position:fixed;top:calc(52px + var(--sat));left:calc(8px + var(--sal));max-width:min(420px,60vw);background:#f4e9d0ee;
+  border:3px solid var(--border);border-radius:6px;padding:6px 10px;font-size:15px;font-weight:bold;z-index:5;pointer-events:none;line-height:1.35}
+#objective small{display:block;color:var(--muted);font-size:12px}
+.say-bub{position:fixed;left:0;top:0;z-index:4;pointer-events:none;background:#fffaf0;color:#2b1d12;border:2px solid #2b1d12;border-radius:10px;padding:2px 9px;font-size:15px;font-weight:bold;white-space:nowrap;transform:translate(-50%,-100%);box-shadow:0 2px 0 #0004}
+.say-bub::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-5px;border:5px solid transparent;border-top-color:#2b1d12;border-bottom:0}
+.say-bub.animal{background:#ffe9e4;border-color:#a0281c}
+#alarm{position:fixed;inset:0;z-index:3;pointer-events:none;border:8px solid #e0281c;animation:alarm 1s infinite}
+@keyframes alarm{0%,100%{opacity:.85}50%{opacity:.15}}
+#objective.raid{background:#ffe1dc;border-color:#a0281c}
+#objective .ob-hint{display:block;margin-top:3px;color:#7a4a1a;font-size:14px;font-weight:normal}
+.help-step{display:flex;gap:10px;align-items:flex-start;margin:8px 0;font-size:17px;line-height:1.45}
+.help-step b.n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--gold);color:#2b1d14;display:flex;align-items:center;justify-content:center}
+.help-dots{text-align:center;color:var(--muted);margin-top:6px}
+#menu-btns{position:fixed;top:calc(8px + var(--sat));right:calc(8px + var(--sar));display:flex;gap:6px;z-index:5}
+#menu-btns button{min-width:64px;height:48px;padding:0 10px;font-size:16px;font-weight:bold;background:var(--panel);border:3px solid var(--border);border-radius:6px;box-shadow:0 3px 0 #0006}
+#menu-btns button:active{transform:translateY(2px);box-shadow:0 1px 0 #0006}
+
+/* 觸控操作 */
+#joy-zone{position:fixed;left:0;bottom:0;width:42vw;height:58vh;z-index:4}
+#joy-base.idle{opacity:.45}
+#btn-a:not(.dim){animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 5px 0 #0007,0 0 0 0 #ffe08a00}50%{box-shadow:0 5px 0 #0007,0 0 0 8px #ffe08a88}}
+#joy-base{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;background:#ffffff22;border:3px solid #ffffff55;
+  left:calc(100px + var(--sal));top:calc(100% - 100px - var(--sab))}
+#joy-knob{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:#f4e9d0dd;border:3px solid var(--border)}
+#btn-a{position:fixed;right:calc(28px + var(--sar));bottom:calc(32px + var(--sab));width:104px;height:104px;border-radius:50%;z-index:5;
+  background:var(--accent);color:#fff;border:4px solid var(--accent-dark);font-size:20px;font-weight:bold;box-shadow:0 5px 0 #0007;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1}
+#btn-a.dim{background:#6b7a6e;border-color:#3d4a40;opacity:.75}
+#btn-a:active{transform:translateY(3px);box-shadow:0 2px 0 #0007}
+
+/* 提示 */
+#toasts{position:fixed;left:50%;top:calc(60px + var(--sat));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:8;pointer-events:none}
+.toast{background:#1d2b3aee;color:#fff4dc;border:2px solid #f4e9d0;border-radius:6px;padding:6px 14px;font-size:17px;font-weight:bold;animation:toast 2.6s forwards;white-space:nowrap}
+.toast.good{border-color:#7ed39a}.toast.gold{border-color:var(--gold);color:#ffe9a8}.toast.bad{border-color:#ff9a8a}
+@keyframes toast{0%{opacity:0;transform:translateY(-8px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+
+/* 視窗 */
+#modal{position:fixed;inset:0;background:#0008;z-index:10;display:flex;align-items:center;justify-content:center;padding:calc(12px + var(--sat)) calc(12px + var(--sar)) calc(12px + var(--sab)) calc(12px + var(--sal))}
+#modal-box{width:min(640px,100%);max-height:100%;overflow:auto;background:var(--panel);border:4px solid var(--border);border-radius:8px;box-shadow:0 6px 0 #0007;padding:18px 20px;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+#modal-box h2{margin:0 0 12px;font-size:22px}
+#modal-box h3{margin:16px 0 8px;font-size:18px}
+.speaker{display:inline-block;background:var(--border);color:#fff4dc;padding:2px 10px;border-radius:4px;font-weight:bold;margin-bottom:8px}
+.say{font-size:20px;line-height:1.6;margin:0 0 14px;white-space:pre-line}
+.btn{min-height:52px;padding:8px 16px;font-size:18px;font-weight:bold;background:var(--accent);color:#fff;border:3px solid var(--accent-dark);border-radius:6px;box-shadow:0 3px 0 #0005}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0005}
+.btn:disabled{background:#9a9a8a;border-color:#6a6a5a;opacity:.7}
+.btn.alt{background:#8a7a66;border-color:#4d4237}
+.btn.small{min-height:40px;padding:4px 12px;font-size:16px}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn-row .btn{flex:1 1 140px}
+.close-x{float:right;min-width:48px;min-height:44px;font-size:18px;font-weight:bold;background:var(--panel2);border:3px solid var(--border);border-radius:6px}
+
+/* 英文挑戰 */
+.q-tag{display:inline-block;background:var(--gold);color:var(--ink);font-weight:bold;padding:2px 10px;border-radius:4px;font-size:15px}
+.q-prompt{font-size:44px;font-weight:bold;text-align:center;margin:14px 0 6px;word-break:break-word}
+.q-sub{text-align:center;color:var(--muted);margin-bottom:14px;font-size:16px}
+.q-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.q-opt{min-height:72px;font-size:26px;font-weight:bold;background:#fffaf0;border:4px solid var(--border);border-radius:8px;box-shadow:0 4px 0 #0005;padding:6px;word-break:break-word}
+.q-opt.right{background:#bff0c8;border-color:var(--good)}
+.q-opt.wrong{background:#ffd0c8;border-color:var(--bad)}
+.q-opt:disabled{color:var(--ink)}
+.q-feedback{min-height:32px;text-align:center;font-size:22px;font-weight:bold;margin-top:12px}
+.speak{min-height:44px;padding:4px 14px;font-size:16px;font-weight:bold;background:var(--panel2);border:3px solid var(--border);border-radius:6px}
+
+/* 清單 */
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:10px;background:#fffaf0;border:2px solid #c9b48c;border-radius:6px;padding:8px 10px}
+.row img{width:32px;height:32px;image-rendering:pixelated;flex:none}
+.row .grow{flex:1;min-width:0}
+.row .t{font-weight:bold;font-size:18px}
+.row .d{font-size:14px;color:var(--muted)}
+.bar{height:10px;background:#d8c9a8;border-radius:5px;overflow:hidden;margin-top:4px}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.grid-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.item-cell{display:flex;align-items:center;gap:8px;background:#fffaf0;border:3px solid #c9b48c;border-radius:6px;padding:8px;font-size:17px;font-weight:bold;min-height:56px}
+.item-cell img{width:32px;height:32px;image-rendering:pixelated}
+button.item-cell:active{border-color:var(--accent)}
+.price-ctl{display:flex;align-items:center;gap:8px}
+.price-ctl .btn{min-width:56px}
+.price-val{min-width:120px;text-align:center;font-size:20px;font-weight:bold}
+.stars{color:#d9a400;letter-spacing:1px}
+.muted{color:var(--muted)}
+.empty{color:var(--muted);text-align:center;padding:16px}
+label.setting{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:18px;font-weight:bold;margin:12px 0}
+label.setting input[type=range]{flex:1;max-width:260px;height:32px}
+label.setting input[type=checkbox]{width:28px;height:28px}
+.swatches{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
+.swatch{width:48px;height:48px;border-radius:6px;border:4px solid #fff;box-shadow:0 0 0 2px var(--border)}
+.swatch.on{border-color:var(--gold)}
+.preview{display:block;margin:0 auto 12px;width:128px;height:128px;image-rendering:pixelated;background:#6aab4f;border:3px solid var(--border);border-radius:6px}
+
+/* 標題畫面 */
+#title{position:fixed;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;padding:16px;
+  background:linear-gradient(#5c9ad8 0 55%,#6aab4f 55% 100%)}
+#title .card{width:min(480px,100%);max-height:100%;overflow:auto;background:var(--panel);border:4px solid var(--border);border-radius:8px;box-shadow:0 8px 0 #0007;padding:0 0 16px;touch-action:pan-y}
+#title-art{display:block;width:100%;aspect-ratio:160/64;image-rendering:pixelated;border-bottom:4px solid var(--border);border-radius:4px 4px 0 0}
+#title .inner{padding:12px 20px 0}
+#title h1{margin:0;text-align:center;font-size:28px;line-height:1.15;color:#7a3b1a;text-shadow:2px 2px 0 #f9d77e}
+#title .sub{text-align:center;margin:2px 0 14px;color:var(--muted);font-weight:bold}
+#title label{display:block;font-weight:bold;font-size:17px;margin-bottom:6px}
+.seat-row{display:flex;gap:10px}
+#seat{flex:1;min-width:0;font-size:28px;padding:8px 10px;text-align:center;border:3px solid var(--border);border-radius:6px;background:#fffaf0;-webkit-user-select:text;user-select:text}
+#start-btn{flex:0 0 auto;min-width:140px;font-size:20px}
+#title-err{color:var(--bad);font-weight:bold;min-height:1.3em;margin-top:6px;font-size:15px}
+#saves h4{margin:6px 0;font-size:14px;color:var(--muted)}
+.save-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.save-chip{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 10px;background:#fffaf0;border:3px solid #c9b48c;border-radius:6px;text-align:left;box-shadow:0 3px 0 #0003}
+.save-chip:active{transform:translateY(2px);box-shadow:none}
+.save-chip b{font-size:18px}
+.save-chip span{font-size:13px;color:var(--muted)}
+.title-foot{display:flex;gap:8px;margin-top:14px}
+.title-foot .btn{flex:1}
+#title .note{font-size:13px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+.fishbar{position:relative;height:40px;background:#3f7fd0;border:3px solid var(--border);border-radius:6px;margin:14px 0;overflow:hidden}
+.fishbar .zone{position:absolute;top:0;bottom:0;background:#5ac87a;border-left:2px solid #2e8b47;border-right:2px solid #2e8b47}
+.fishbar .needle{position:absolute;top:-3px;bottom:-3px;width:8px;margin-left:-4px;background:#fff;border:2px solid #2b1d14;border-radius:2px}
+table.words{width:100%;border-collapse:collapse;font-size:15px;background:#fffaf0}
+table.words td,table.words th{border-bottom:1px solid #d8c9a8;padding:4px 6px;text-align:left}
+.problem{color:var(--bad);font-size:15px;margin:4px 0}
+ol.steps{padding-left:22px;line-height:1.7;font-size:16px;margin:6px 0}
+
+#fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;z-index:7}
+#fade.on{opacity:1}
+@media (max-height:500px){
+  .q-prompt{font-size:34px;margin:6px 0 2px}.q-opt{min-height:56px;font-size:22px}
+  #btn-a{width:88px;height:88px}#joy-base{width:112px;height:112px;margin:-56px 0 0 -56px}
+}
+</style>
+</head>
+<body>
+<canvas id="world"></canvas>
+
+<div id="hud" hidden>
+  <div class="hud-box"><img id="coin-ico" alt=""><span id="hud-coins">0</span></div>
+  <div class="hud-box" id="hud-time"></div>
+  <div class="hud-box" id="hud-bag"></div>
+</div>
+<div id="objective" hidden></div>
+<div id="menu-btns" hidden>
+  <button data-open="bag">背包</button>
+  <button data-open="quests">任務</button>
+  <button data-open="words">單字本</button>
+  <button data-open="settings">設定</button>
+  <button data-open="help">說明</button>
+</div>
+<div id="joy-zone" hidden><div id="joy-base" class="idle"><div id="joy-knob"></div></div></div>
+<button id="btn-a" class="dim" hidden><span id="btn-a-label">互動</span></button>
+<div id="toasts"></div>
+<div id="alarm" hidden></div>
+<div id="bubbles"></div>
+<div id="modal" hidden><div id="modal-box"></div></div>
+<div id="fade"></div>
+
+<div id="title">
+  <div class="card">
+    <canvas id="title-art" width="160" height="64"></canvas>
+    <div class="inner">
+      <h1>English Adventure Shop</h1>
+      <p class="sub">英文冒險小商店</p>
+      <label for="seat">輸入你的座號</label>
+      <div class="seat-row">
+        <input id="seat" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" placeholder="例如 5">
+        <button class="btn" id="start-btn">開始冒險</button>
+      </div>
+      <div id="title-err"></div>
+      <div id="saves"></div>
+      <div class="title-foot">
+        <button class="btn alt small" id="fs-btn">全螢幕</button>
+        <button class="btn alt small" id="teacher-btn">老師專區</button>
+      </div>
+      <p class="note" id="word-status">讀取單字中…</p>
+      <p class="note" id="save-note">進度會存在這台平板上。換平板會從新的冒險開始。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   ★★★ 老師設定區 ★★★
+
+   單字平常在 Google 試算表裡修改（說明：遊戲登入畫面 →「老師專區」）。
+   SHEET_URL：Google 試算表的網址（試算表要設為「知道連結的任何人都能檢視」），
+              或「發布到網路」得到的 CSV 網址，貼在引號中間。
+
+   下面的 CURRENT_UNIT 與 WORDS 是「備用單字」：
+   還沒設定試算表、而且這台平板從來沒讀到過試算表時才會使用。
+   ===================================================================== */
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1N5J1G4KvrF7gepjn-a1Qc93G4R-N0f3S9HJbqMm0Kug/edit?gid=1877670129#gid=1877670129";
+
+const CURRENT_UNIT = "Unit 2";
+const WORDS = [
+  ["Unit 1", "apple",  "蘋果", "noun"],
+  ["Unit 1", "banana", "香蕉", "noun"],
+  ["Unit 1", "bread",  "麵包", "noun"],
+  ["Unit 1", "milk",   "牛奶", "noun"],
+  ["Unit 1", "egg",    "蛋",   "noun"],
+  ["Unit 1", "juice",  "果汁", "noun"],
+  ["Unit 1", "cake",   "蛋糕", "noun"],
+  ["Unit 1", "water",  "水",   "noun"],
+  ["Unit 2", "park",   "公園", "place"],
+  ["Unit 2", "school", "學校", "place"],
+  ["Unit 2", "library","圖書館","place"],
+  ["Unit 2", "run",    "跑",   "verb"],
+  ["Unit 2", "jump",   "跳",   "verb"],
+  ["Unit 2", "swim",   "游泳", "verb"],
+  ["Unit 2", "happy",  "快樂的","adj"],
+  ["Unit 2", "big",    "大的", "adj"],
+];
+/* ===================== 老師設定區結束，以下為遊戲程式 ===================== */
+
+const SAVE_PREFIX = "eas1_save_";
+const T = 16;                       // 地圖格大小（像素）
+const MIN_PER_SEC = 1.2;            // 現實 1 秒 = 遊戲 1.2 分鐘 → 20 分鐘一天
+const DAY = 1440;
+const SHOP_OPEN = 7 * 60, SHOP_CLOSE = 21 * 60;
+const QUESTION_COOLDOWN_MS = 25000;
+const GATHER_QUESTION_CHANCE = 0.65;
+const PRACTICE_PER_DAY = 3;
+const MAX_SALES_PER_DAY = 30;
+
+/* ---------------- 工具 ---------------- */
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = Math.random;
+const randInt = (a, b) => a + Math.floor(rand() * (b - a + 1));
+const pick = (arr) => arr[Math.floor(rand() * arr.length)];
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function seeded(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const norm = (s) => String(s).trim().toLowerCase().replace(/\s+/g, " ");
+
+/* ---------------- 單字資料：Google 試算表 → 本機快取 → 備用單字 ---------------- */
+const WORDS_CACHE_KEY = "eas1_words_cache";
+let VOCAB = [];
+let CURRENT_UNITS = new Set();
+let wordSource = { kind: "builtin", at: 0, problems: [] };
+// rows: [{unit, en, zh, pos, cur, line}]
+function applyWordRows(rows) {
+  const seen = new Map(), list = [], problems = [];
+  for (const r of rows) {
+    if (!r.unit && !r.en && !r.zh) continue;
+    if (!r.unit || !r.en || !r.zh) { problems.push(`第 ${r.line} 行：單元、英文、中文要填完整（${[r.unit, r.en, r.zh].filter(Boolean).join(" / ") || "空白"}）`); continue; }
+    const key = norm(r.en);
+    if (seen.has(key)) { problems.push(`第 ${r.line} 行：「${r.en}」和第 ${seen.get(key)} 行重複，只使用第一個`); continue; }
+    seen.set(key, r.line);
+    list.push({ key, unit: r.unit, en: r.en, zh: r.zh, pos: r.pos || "other", cur: r.cur });
+  }
+  const zhSeen = new Map();
+  for (const w of list) { const z = norm(w.zh); if (zhSeen.has(z)) problems.push(`「${w.en}」和「${zhSeen.get(z)}」的中文都是「${w.zh}」，這兩個字不會出現在同一題`); else zhSeen.set(z, w.en); }
+  let cur = new Set(list.filter((w) => w.cur).map((w) => w.unit));
+  if (!cur.size && list.length) cur = new Set([list[list.length - 1].unit]);
+  const curCount = list.filter((w) => cur.has(w.unit)).length;
+  if (list.length && list.length < 4) problems.push(`目前只有 ${list.length} 個單字，至少要 4 個才能出四選一的題目`);
+  if (curCount && curCount < 3) problems.push(`本週單元只有 ${curCount} 個單字，建議至少 5 個`);
+  VOCAB = list; CURRENT_UNITS = cur;
+  return problems;
+}
+function builtinRows() { return WORDS.map((r, i) => ({ unit: String(r[0] ?? "").trim(), en: String(r[1] ?? "").trim(), zh: String(r[2] ?? "").trim(), pos: String(r[3] ?? "").trim(), cur: String(r[0] ?? "").trim() === CURRENT_UNIT, line: i + 1 })); }
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  text = text.replace(/^﻿/, "");
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n" || ch === "\r") { if (ch === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += ch;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+const CUR_MARK = /^(v|y|yes|x|1|是|本週|✓|✔|o|ｖ|Ｖ)$/i;
+// cellRows：每列是一個字串陣列（第一列可以是標題列）
+function rowsFromCells(cellRows, firstLine = 1) {
+  const out = [];
+  cellRows.forEach((cells, i) => {
+    const c = cells.map((x) => String(x ?? "").trim());
+    if (i === 0 && (/英文|english/i.test(c[1] || "") || /單元/.test(c[0] || ""))) return;   // 標題列
+    out.push({ unit: c[0] || "", en: c[1] || "", zh: c[2] || "", cur: CUR_MARK.test(c[3] || ""), pos: "", line: i + firstLine });
+  });
+  return out;
+}
+const sheetRows = (csv) => rowsFromCells(parseCSV(csv));
+// 解析試算表網址：一般分享網址 → {id, gid}；發布到網路的 CSV 網址 → {csv}
+function sheetSource(url) {
+  if (!url) return null;
+  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/);
+  if (m && !/\/d\/e\//.test(url)) return { id: m[1], gid: (url.match(/[#&?]gid=(\d+)/) || [])[1] || "0" };
+  return { csv: url };
+}
+function withTimeout(p, ms) { return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error("連線逾時")), ms))]); }
+async function fetchSheetCSV(url) {
+  const res = await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error(res.status === 401 || res.status === 403 || res.status === 404 ? "試算表沒有開放「知道連結的任何人都能檢視」" : "HTTP " + res.status);
+  const text = await res.text();
+  if (/<html/i.test(text.slice(0, 300))) throw new Error("試算表沒有開放「知道連結的任何人都能檢視」");
+  return sheetRows(text);
+}
+// 備用方式：Google 的 JSONP 介面（直接在電腦上打開 HTML 檔時，一般讀取會被瀏覽器擋住）
+let gvizSeq = 0;
+function gvizTable(id, gid, tq = "") {
+  return new Promise((resolve, reject) => {
+    const cb = "__easSheet" + Date.now() + "_" + gvizSeq++;
+    const s = document.createElement("script");
+    const done = () => { delete window[cb]; s.remove(); };
+    window[cb] = (resp) => {
+      done();
+      if (!resp || resp.status === "error" || !resp.table) return reject(new Error("試算表沒有開放「知道連結的任何人都能檢視」"));
+      resolve(resp.table);
+    };
+    s.onerror = () => { done(); reject(new Error("讀不到試算表（請確認網路與分享設定）")); };
+    s.src = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json;responseHandler:${cb}&headers=1&gid=${gid}${tq ? "&tq=" + encodeURIComponent(tq) : ""}&t=${Date.now()}`;
+    document.head.appendChild(s);
+  });
+}
+async function fetchSheetJSONP(id, gid) {
+  const t = await gvizTable(id, gid);
+  const cells = t.rows.map((r) => (r.c || []).map((c) => (c && c.v != null ? String(c.v) : "")));
+  const header = t.cols.map((c) => c.label || "");
+  return header.some(Boolean) ? rowsFromCells([header, ...cells]) : rowsFromCells(cells);
+}
+async function fetchSheetRows() {
+  const src = sheetSource(SHEET_URL);
+  if (src.csv) return fetchSheetCSV(src.csv);
+  if (location.protocol === "file:") return fetchSheetJSONP(src.id, src.gid);   // 本機檔案直接用備用方式
+  try { return await fetchSheetCSV(`https://docs.google.com/spreadsheets/d/${src.id}/export?format=csv&gid=${src.gid}`); }
+  catch (e) { return fetchSheetJSONP(src.id, src.gid); }
+}
+async function loadWords(force = false) {
+  // 1) 先用快取或備用單字，讓遊戲一定能開始
+  let cache = null;
+  try { cache = JSON.parse(localStorage.getItem(WORDS_CACHE_KEY) || "null"); } catch { /* 無法讀取 */ }
+  if (!force) {
+    if (cache && cache.rows && cache.rows.length) { wordSource = { kind: "cache", at: cache.at, problems: applyWordRows(cache.rows) }; }
+    else wordSource = { kind: "builtin", at: 0, problems: applyWordRows(builtinRows()) };
+  }
+  // 2) 有設定試算表就讀最新的
+  if (!SHEET_URL) return wordSource;
+  try {
+    const rows = await withTimeout(fetchSheetRows(), 8000);
+    const problems = applyWordRows(rows);
+    if (!VOCAB.length) throw new Error("試算表裡沒有讀到任何單字");
+    wordSource = { kind: "sheet", at: Date.now(), problems };
+    try { localStorage.setItem(WORDS_CACHE_KEY, JSON.stringify({ at: Date.now(), rows })); } catch { /* 空間不足 */ }
+  } catch (err) {
+    if (cache && cache.rows && cache.rows.length) wordSource = { kind: "cache", at: cache.at, problems: applyWordRows(cache.rows), error: String(err.message || err) };
+    else wordSource = { kind: "builtin", at: 0, problems: applyWordRows(builtinRows()), error: String(err.message || err) };
+  }
+  return wordSource;
+}
+const isCurrent = (w) => CURRENT_UNITS.has(w.unit);
+const currentLabel = () => [...CURRENT_UNITS].join("、") || "（未設定）";
+
+/* ---------------- 遊戲資料定義 ---------------- */
+const ITEMS = {
+  wood:     { zh: "木材", en: "wood",     price: 4 },
+  berry:    { zh: "莓果", en: "berry",    price: 5 },
+  flower:   { zh: "野花", en: "flower",   price: 6 },
+  herb:     { zh: "草藥", en: "herb",     price: 8 },
+  mushroom: { zh: "蘑菇", en: "mushroom", price: 12 },
+  honey:    { zh: "蜂蜜", en: "honey",    price: 20 },
+  fish:     { zh: "小魚", en: "fish",     price: 7 },
+  bigfish:  { zh: "大魚", en: "big fish", price: 16 },
+  carrot:     { zh: "胡蘿蔔", en: "carrot",     price: 10 },
+  tomato:     { zh: "番茄",   en: "tomato",     price: 14 },
+  strawberry: { zh: "草莓",   en: "strawberry", price: 16 },
+  sunflower:  { zh: "向日葵", en: "sunflower",  price: 22 },
+  pumpkin:    { zh: "南瓜",   en: "pumpkin",    price: 45 },
+  jam:      { zh: "果醬", en: "jam",      price: 22, crafted: true },
+  tomatosoup: { zh: "番茄湯",   en: "tomato soup",     price: 34, crafted: true },
+  cake:       { zh: "草莓蛋糕", en: "strawberry cake", price: 58, crafted: true },
+  pie:        { zh: "南瓜派",   en: "pumpkin pie",     price: 80, crafted: true },
+  bouquet:  { zh: "花束", en: "bouquet",  price: 24, crafted: true },
+  soup:     { zh: "蘑菇湯", en: "soup",   price: 40, crafted: true },
+  potion:   { zh: "藥水", en: "potion",   price: 48, crafted: true },
+  shell:    { zh: "貝殼", en: "shell",    price: 9 },
+  coconut:  { zh: "椰子", en: "coconut",  price: 15 },
+  necklace: { zh: "貝殼項鍊", en: "necklace", price: 45, crafted: true },
+  cjuice:   { zh: "椰子汁", en: "coconut juice", price: 38, crafted: true },
+};
+// 英文訂單用：[單數, 複數]
+const PHRASE = {
+  wood: ["log", "logs"], berry: ["berry", "berries"], flower: ["flower", "flowers"], herb: ["herb", "herbs"],
+  mushroom: ["mushroom", "mushrooms"], honey: ["jar of honey", "jars of honey"], jam: ["jar of jam", "jars of jam"],
+  bouquet: ["bouquet", "bouquets"], soup: ["bowl of soup", "bowls of soup"], potion: ["potion", "potions"],
+  fish: ["fish", "fish"], bigfish: ["big fish", "big fish"],
+  carrot: ["carrot", "carrots"], tomato: ["tomato", "tomatoes"], strawberry: ["strawberry", "strawberries"],
+  sunflower: ["sunflower", "sunflowers"], pumpkin: ["pumpkin", "pumpkins"],
+  shell: ["shell", "shells"], coconut: ["coconut", "coconuts"], necklace: ["necklace", "necklaces"], cjuice: ["cup of coconut juice", "cups of coconut juice"],
+  tomatosoup: ["bowl of tomato soup", "bowls of tomato soup"], cake: ["strawberry cake", "strawberry cakes"], pie: ["pumpkin pie", "pumpkin pies"],
+};
+// 作物：種子價格、成長時間（遊戲分鐘；現實 1 秒 = 1.2 分）、收成數量
+const CROPS = {
+  carrot:     { seed: 4,  grow: 180,  yield: [1, 2] },
+  tomato:     { seed: 6,  grow: 300,  yield: [1, 2] },
+  strawberry: { seed: 8,  grow: 360,  yield: [1, 2] },
+  sunflower:  { seed: 10, grow: 480,  yield: [1, 1] },
+  pumpkin:    { seed: 15, grow: 1080, yield: [1, 1], needBridge: true },
+};
+const FARM_PLOTS = 12;
+const NUM_EN = ["zero", "one", "two", "three", "four", "five"];
+const RECIPES = [
+  { out: "jam",     need: { berry: 3 } },
+  { out: "bouquet", need: { flower: 3 } },
+  { out: "soup",    need: { mushroom: 2, herb: 1 } },
+  { out: "potion",  need: { herb: 2, honey: 1 } },
+  { out: "tomatosoup", need: { tomato: 2 } },
+  { out: "cake",       need: { strawberry: 3 } },
+  { out: "pie",        need: { pumpkin: 1, berry: 2 } },
+  { out: "necklace",   need: { shell: 3, flower: 1 } },
+  { out: "cjuice",     need: { coconut: 2 } },
+];
+const NODE_KINDS = {
+  tree:     { item: "wood",     min: 1, max: 2, cd: 240,  verb: "砍樹" },
+  bush:     { item: "berry",    min: 1, max: 2, cd: 360,  verb: "摘莓果" },
+  herb:     { item: "herb",     min: 1, max: 1, cd: 480,  verb: "採草藥" },
+  flower:   { item: "flower",   min: 1, max: 2, cd: 360,  verb: "摘花" },
+  mushroom: { item: "mushroom", min: 1, max: 2, cd: 600,  verb: "採蘑菇" },
+  hive:     { item: "honey",    min: 1, max: 1, cd: 1440, verb: "取蜂蜜" },
+  palm:     { item: "coconut",  min: 1, max: 2, cd: 480,  verb: "摘椰子" },
+  shell:    { item: "shell",    min: 1, max: 2, cd: 300,  verb: "撿貝殼" },
+  chest:    { cd: 1440, verb: "打開" },
+};
+const UPGRADES = {
+  backpack:  { name: "背包",     values: [20, 30, 40, 50], unit: (v) => `可裝 ${v} 個`,
+               costs: [null, { coins: 60 }, { coins: 150, items: { wood: 10 } }, { coins: 300, items: { wood: 20 } }] },
+  tool:      { name: "採集工具", values: [0, 1, 2, 3], unit: (v) => `採集量 +${v}`,
+               costs: [null, { coins: 80, items: { wood: 5 } }, { coins: 200, items: { herb: 10 } }, { coins: 400, items: { mushroom: 5 } }] },
+  shelfSlots:{ name: "貨架格數", values: [3, 4, 5, 6], unit: (v) => `${v} 格貨架`,
+               costs: [null, { coins: 100, items: { wood: 10 } }, { coins: 250, items: { wood: 20 } }, { coins: 500, items: { honey: 10 } }] },
+  shelfCap:  { name: "貨架容量", values: [5, 8, 12], unit: (v) => `每格放 ${v} 個`,
+               costs: [null, { coins: 120 }, { coins: 300, items: { wood: 15 } }] },
+  shoes:     { name: "運動鞋",   values: [0, 0.1, 0.2], unit: (v) => `速度 +${Math.round(v * 100)}%`,
+               costs: [null, { coins: 100 }, { coins: 250 }] },
+  farm:      { name: "田地",     values: [6, 9, 12], unit: (v) => `${v} 塊田`,
+               costs: [null, { coins: 120, items: { wood: 10 } }, { coins: 250, items: { wood: 20 } }] },
+  can:       { name: "大灑水壺", values: [0, 1], unit: (v) => v ? "一次澆整片田" : "一次澆一塊田",
+               costs: [null, { coins: 150 }] },
+  skill:     { name: "採集技能", values: [1, 0.75, 0.5], unit: (v) => v === 1 ? "一般速度" : `採集快 ${Math.round((1 - v) * 100)}%`,
+               costs: [null, { coins: 150 }, { coins: 350, items: { herb: 5 } }] },
+  decor:     { name: "商店裝潢", values: [0, 1, 2, 3], unit: (v) => v ? `顧客 +${v * 6}%` : "還沒有裝潢",
+               costs: [null, { coins: 80, items: { flower: 5 } }, { coins: 160, items: { wood: 10 } }, { coins: 300, items: { honey: 3 } }] },
+};
+const DAILY_POOL = [
+  { id: "g_wood",  text: "採集 5 個木材",   ev: "gather", item: "wood",  n: 5, reward: { coins: 20 } },
+  { id: "g_berry", text: "採集 4 個莓果",   ev: "gather", item: "berry", n: 4, reward: { coins: 20 } },
+  { id: "g_herb",  text: "採集 2 個草藥",   ev: "gather", item: "herb",  n: 2, reward: { coins: 20 } },
+  { id: "g_flower",text: "採集 3 朵野花",   ev: "gather", item: "flower",n: 3, reward: { coins: 15 } },
+  { id: "ans3",    text: "答對 3 題英文",   ev: "correct", n: 3, reward: { coins: 25 } },
+  { id: "ans5",    text: "答對 5 題英文",   ev: "correct", n: 5, reward: { coins: 35 } },
+  { id: "sell5",   text: "賣出 5 件商品",   ev: "sell", n: 5, reward: { coins: 25 } },
+  { id: "talk2",   text: "和 2 位村民說話", ev: "talk", n: 2, reward: { coins: 15 } },
+  { id: "chest1",  text: "打開 1 個寶箱",   ev: "chest", n: 1, reward: { coins: 15, items: { herb: 1 } } },
+  { id: "craft1",  text: "在工作台製作 1 個商品", ev: "craft", n: 1, reward: { coins: 20 }, needStep: 6 },
+  { id: "order1",  text: "完成婆婆的英文訂單", ev: "order", n: 1, reward: { coins: 15 } },
+  { id: "fish2",   text: "在池塘釣到 2 條魚", ev: "fish", n: 2, reward: { coins: 20 } },
+  { id: "harv3",   text: "在農田收成 3 個作物", ev: "harvest", n: 3, reward: { coins: 20 } },
+  { id: "wish2",   text: "滿足 2 位指名顧客", ev: "wish", n: 2, reward: { coins: 25 } },
+];
+const MAIN = [
+  "和村長說話",
+  "到森林砍 1 個木材",
+  "回商店，把木材放上貨架",
+  "等第一位顧客來買東西",
+  "回去向村長報告",
+  "收集 15 個木材，交給村長修復商店",
+  "到工匠那裡升級「貨架格數」",
+  "到森林找小狐狸",
+  "收集 25 個木材＋8 個草藥，請工匠修好森林的橋",
+  "過橋到森林深處，取得 1 罐蜂蜜",
+  "存到 300 金，請村長開通往海邊的路",
+  "到海邊撿 5 個貝殼",
+  "去找海邊的漁夫阿海聊聊",
+  "到工匠那裡買一把武器",
+  "保衛村莊：趕走搗亂的動物！",
+  "回去向村長報告",
+  "做一條貝殼項鍊，送給漁夫阿海",
+  "主線完成！繼續經營商店、保護村莊",
+];
+const SEED_SHOP = "綠芽種子店";
+// 交通工具：在戶外騎乘，移動更快
+const VEHICLES = {
+  skate: { name: "滑板",   en: "skateboard", speed: 0.35, cost: 150 },
+  bike:  { name: "腳踏車", en: "bike",       speed: 0.75, cost: 400 },
+  horse: { name: "小馬",   en: "horse",      speed: 1.2,  cost: 900 },
+};
+// 武器：用來把搗亂的動物趕出村子
+const WEAPONS = {
+  knife: { name: "小刀", en: "knife",         cost: 80,  dmg: 1, range: 22, cd: 0.35 },
+  sword: { name: "長劍", en: "sword",         cost: 260, dmg: 2, range: 26, cd: 0.4 },
+  bow:   { name: "弓箭", en: "bow and arrow", cost: 320, dmg: 1, range: 96, cd: 0.55, ranged: true },
+};
+const ANIMALS = {
+  boar:    { name: "野豬", en: "boar",    hp: 3, speed: 20, reward: 12 },
+  raccoon: { name: "浣熊", en: "raccoon", hp: 2, speed: 26, reward: 9 },
+  crow:    { name: "烏鴉", en: "crow",    hp: 1, speed: 32, reward: 6 },
+};
+// 路人閒聊（頭上會冒出對話框）
+const CHATTER = ["Hi!", "Hello!", "今天天氣真好～", "Nice day!", "去買菜囉～", "好想吃蛋糕", "♪ La la la ♪", "Good morning!", "等一下去釣魚！", "Yummy!", "好忙好忙！", "See you!"];
+const CHATS = [
+  ["Hi! How are you?", "I'm fine, thank you!"],
+  ["你有去那間新商店嗎？", "有！東西很棒喔！"],
+  ["Good morning!", "Good morning!"],
+  ["要不要一起玩？", "OK! Let's go!"],
+  ["聽說森林裡有寶箱", "真的嗎？好想去！"],
+  ["What's this?", "It's an apple!"],
+  ["海邊的椰子好好喝", "我也想去海邊！"],
+  ["最近好像有野豬…", "好可怕！要小心！"],
+];
+const GREETS = ["Hi, 小老闆！", "Hello!", "你好呀！", "Good job!", "店開了嗎？"];
+
+// 每個主線步驟「怎麼做」的提示（顯示在左上角目標框）
+const MAIN_HINT = [
+  "跟著黃色箭頭走到村長旁邊，按右下角「對話」",
+  "從村子東邊的路走進森林，站在樹旁邊按「砍樹」",
+  "走進你的商店，站在貨架前按「貨架」→ 選木材 → 按「上架！」",
+  "在店裡等一下，顧客會自己走進來買",
+  "走出商店，跟著箭頭去找村長",
+  "樹砍完要等一下才會長回來，可以先摘莓果、採草藥放上貨架賺錢",
+  "找工匠按「對話」→「我要升級」→「貨架格數」（要 100 金＋10 木材）",
+  "小狐狸在森林裡，跟著箭頭找到牠並和牠說話",
+  "木材、草藥都在森林。採到多的可以放上貨架賣錢",
+  "過橋往森林深處走，找到蜂窩按「取蜂蜜」",
+  "多賣東西、做每日任務存錢，存夠了去找村長",
+  "海邊在村子右下角的路，走到沙灘上按「撿貝殼」",
+  "跟著箭頭找到漁夫阿海，按「對話」",
+  "找工匠按「對話」→「買武器」，小刀只要 80 金",
+  "靠近動物按右下角「攻擊」，或直接點動物",
+  "跟著箭頭去找村長",
+  "在商店的工作台用 3 個貝殼＋1 朵野花做項鍊，再拿給阿海",
+  "打開右上角「任務」做每日任務；聽到警報就回村子趕走動物！",
+];
+
+/* ---------------- 像素圖繪製 ---------------- */
+function mk(w, h, fn) { const c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d"); fn(g); return c; }
+function P(g, x, y, col, w = 1, h = 1) { g.fillStyle = col; g.fillRect(x, y, w, h); }
+function fromRows(rows, pal, mirror = false) {
+  return mk(16, rows.length, (g) => rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const c = pal[r[x]]; if (c) P(g, mirror ? 15 - x : x, y, c); } }));
+}
+function circle(g, cx, cy, r, col) { for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * 0.6) P(g, cx + x, cy + y, col); }
+
+// 角色（16×16）：O 外框、H 頭髮、S 皮膚、E 眼睛、T 上衣、P 褲子、B 鞋
+const CH_HEAD_DOWN = ["................", ".....OOOOOO.....", "....OHHHHHHO....", "...OHHHHHHHHO...", "...OHHHHHHHHO...", "...OHSSSSSSHO...", "...OSSESSESSO...", "....OSSSSSSO...."];
+const CH_HEAD_UP   = ["................", ".....OOOOOO.....", "....OHHHHHHO....", "...OHHHHHHHHO...", "...OHHHHHHHHO...", "...OHHHHHHHHO...", "...OHHHHHHHHO...", "....OHHHHHHO...."];
+const CH_HEAD_SIDE = ["................", ".....OOOOO......", "....OHHHHHO.....", "...OHHHHHHHO....", "...OHHHHHHHO....", "...OHHHSSSSO....", "...OHHSSSESO....", "....OHSSSSO....."];
+const CH_BODY_FRONT = ["....OTTTTTTO....", "...OSTTTTTTSO...", "...OSTTTTTTSO...", "....OTTTTTTO....", "....OPPPPPPO...."];
+const CH_BODY_SIDE  = [".....OTTTTO.....", ".....OTTSTO.....", ".....OTTSTO.....", ".....OTTTTO.....", ".....OPPPPO....."];
+const CH_LEGS_FRONT = [["....OPPOOPPO....", "....OBO..OBO....", "................"],
+                       ["....OPPOOPPO....", "....OBO...OO....", "................"],
+                       ["....OPPOOPPO....", "....OO...OBO....", "................"]];
+const CH_LEGS_SIDE  = [[".....OPPPPO.....", ".....OBOOBO.....", "................"],
+                       [".....OPOOPO.....", "....OBO..OBO....", "................"],
+                       [".....OPPPPO.....", ".....OBBBO......", "................"]];
+const charCache = new Map();
+function charSprite(look, dir, frame) {
+  const k = `${look.hair}|${look.shirt}|${look.pants || ""}|${look.skin || ""}|${dir}|${frame}`;
+  if (charCache.has(k)) return charCache.get(k);
+  const pal = { O: "#2b1d14", H: look.hair, S: look.skin || "#f2c79b", E: "#2b1d14", T: look.shirt, P: look.pants || "#3b4a6b", B: "#4a3020" };
+  const side = dir === "left" || dir === "right";
+  const head = dir === "up" ? CH_HEAD_UP : side ? CH_HEAD_SIDE : CH_HEAD_DOWN;
+  const body = side ? CH_BODY_SIDE : CH_BODY_FRONT;
+  const legs = (side ? CH_LEGS_SIDE : CH_LEGS_FRONT)[frame];
+  const c = fromRows([...head, ...body, ...legs], pal, dir === "left");
+  charCache.set(k, c);
+  return c;
+}
+const FOX_ROWS = ["................", "..O.........O...", ".OFO.......OFO..", ".OFFO.....OFFO..", ".OFFFOOOOOFFFO..", ".OFFFFFFFFFFFO..", "OFFEFFFFFFFEFFO.", "OFFFFWWWWWFFFFO.", ".OFFWWWNWWWFFO..", "..OFWWWWWWWFO...", "...OFFFFFFFO....", "..OFFFFFFFFFO.OO", "..OFWWFFFWWFOOFO", "..OFWWFFFWWFOFWO", "...OOOOOOOOOOOO.", "................"];
+const FOX = fromRows(FOX_ROWS, { O: "#3a2210", F: "#e07a2c", W: "#fbe9d4", E: "#1a0f08", N: "#1a0f08" });
+
+// 道具圖示（16×16）
+const ICONS = {};
+function makeIcons() {
+  ICONS.wood = mk(16, 16, (g) => { P(g, 2, 5, "#6b4226", 12, 7); P(g, 2, 5, "#8b5a2b", 12, 2); P(g, 1, 6, "#d9b27a", 3, 5); P(g, 2, 7, "#b58650", 1, 3); P(g, 13, 6, "#4a2c18", 2, 5); });
+  ICONS.berry = mk(16, 16, (g) => { P(g, 7, 2, "#3f8a45", 3, 2); circle(g, 5, 9, 3, "#c0284a"); circle(g, 10, 10, 3, "#a31d3e"); circle(g, 8, 6, 2, "#d23c5a"); P(g, 4, 8, "#ff9aae"); P(g, 9, 9, "#ff9aae"); });
+  ICONS.flower = mk(16, 16, (g) => { P(g, 7, 8, "#3f8a45", 2, 7); P(g, 4, 11, "#58b368", 3, 2); circle(g, 8, 6, 3, "#f08cb0"); circle(g, 8, 6, 1, "#ffe066"); });
+  ICONS.herb = mk(16, 16, (g) => { P(g, 7, 7, "#2f6b34", 2, 8); circle(g, 5, 7, 3, "#58b368"); circle(g, 11, 6, 3, "#4aa35a"); circle(g, 8, 3, 2, "#9be08a"); });
+  ICONS.mushroom = mk(16, 16, (g) => { P(g, 6, 8, "#f2e6d0", 4, 6); circle(g, 8, 6, 5, "#d0342c"); P(g, 3, 7, "#d0342c", 11, 2); P(g, 5, 4, "#fff"); P(g, 10, 5, "#fff", 2, 1); P(g, 7, 2, "#fff"); });
+  ICONS.honey = mk(16, 16, (g) => { P(g, 4, 5, "#e8a820", 8, 9); P(g, 5, 6, "#ffd55a", 3, 6); P(g, 3, 3, "#8b5a2b", 10, 2); P(g, 6, 1, "#c9a66b", 4, 2); P(g, 4, 14, "#b07a10", 8, 1); });
+  const fishIcon = (body, belly, big) => mk(16, 16, (g) => {
+    const L = big ? 1 : 3, R = big ? 12 : 11;
+    P(g, L + 1, 6, body, R - L - 1, 5); P(g, L, 7, body, 1, 3); P(g, L + 2, 5, body, R - L - 4, 1); P(g, L + 2, 11, body, R - L - 4, 1);
+    P(g, L + 2, 9, belly, R - L - 3, 2); P(g, R, 5, body, 1, 7); P(g, R + 1, 4, body, 2, 2); P(g, R + 1, 10, body, 2, 2);
+    P(g, L + 2, 7, "#fff", 2, 1); P(g, L + 3, 7, "#1a1a2a", 1, 1);
+  });
+  ICONS.fish = fishIcon("#5a8ad0", "#c8dcf0", false);
+  ICONS.bigfish = fishIcon("#d07a3a", "#f4d8b0", true);
+  ICONS.carrot = mk(16, 16, (g) => { P(g, 7, 1, "#58b368", 2, 4); P(g, 5, 2, "#3f8a45", 2, 3); P(g, 9, 2, "#3f8a45", 2, 3); for (let i = 0; i < 9; i++) P(g, 6 + Math.floor(i / 4), 5 + i, "#e8822a", Math.max(1, 4 - Math.floor(i / 3)), 1); P(g, 6, 6, "#ffb060", 1, 3); });
+  ICONS.tomato = mk(16, 16, (g) => { circle(g, 8, 9, 5, "#d8342c"); P(g, 5, 6, "#ff7a6a", 2, 2); P(g, 6, 3, "#3f8a45", 5, 2); P(g, 8, 2, "#3f8a45", 1, 2); });
+  ICONS.strawberry = mk(16, 16, (g) => { for (let i = 0; i < 9; i++) P(g, 3 + Math.floor(i / 2), 5 + i, "#e0284a", 10 - Math.floor(i / 2) * 2, 1); P(g, 4, 3, "#3f8a45", 8, 2); for (const [a, b] of [[5, 7], [9, 7], [7, 9], [6, 11], [9, 10]]) P(g, a, b, "#ffe080"); });
+  ICONS.sunflower = mk(16, 16, (g) => { P(g, 7, 9, "#3f8a45", 2, 7); P(g, 9, 11, "#58b368", 3, 2); circle(g, 8, 6, 5, "#f2c230"); circle(g, 8, 6, 2, "#6b4226"); });
+  ICONS.pumpkin = mk(16, 16, (g) => { circle(g, 8, 9, 6, "#e07a20"); P(g, 3, 8, "#e07a20", 11, 4); P(g, 8, 4, "#b05a10", 1, 11); P(g, 5, 5, "#b05a10", 1, 9); P(g, 11, 5, "#b05a10", 1, 9); P(g, 7, 1, "#5a3a20", 2, 3); });
+  ICONS.tomatosoup = mk(16, 16, (g) => { P(g, 2, 8, "#e8e0d0", 12, 2); P(g, 3, 10, "#d8d0c0", 10, 3); P(g, 5, 13, "#b8b0a0", 6, 1); P(g, 3, 7, "#d8342c", 10, 2); P(g, 6, 7, "#ff8a6a", 2, 1); P(g, 6, 2, "#ffffff88", 1, 4); P(g, 9, 3, "#ffffff88", 1, 3); });
+  ICONS.cake = mk(16, 16, (g) => { P(g, 2, 8, "#f4e0c0", 12, 6); P(g, 2, 7, "#fff4f8", 12, 2); P(g, 2, 11, "#f08cb0", 12, 1); P(g, 1, 14, "#c9c9d0", 14, 1); circle(g, 5, 5, 1, "#e0284a"); circle(g, 8, 4, 1, "#e0284a"); circle(g, 11, 5, 1, "#e0284a"); });
+  ICONS.pie = mk(16, 16, (g) => { P(g, 1, 8, "#c88a40", 14, 5); P(g, 2, 7, "#e8a850", 12, 2); P(g, 3, 6, "#e07a20", 10, 2); P(g, 4, 6, "#f0a040", 2, 1); P(g, 3, 13, "#a06a30", 10, 1); P(g, 5, 9, "#a06a30", 1, 3); P(g, 10, 9, "#a06a30", 1, 3); });
+  ICONS.jam = mk(16, 16, (g) => { P(g, 4, 5, "#c0284a", 8, 9); P(g, 5, 7, "#e05070", 2, 5); P(g, 3, 3, "#f4e9d0", 10, 3); P(g, 3, 3, "#d04a4a", 10, 1); P(g, 6, 9, "#fff", 4, 3); P(g, 7, 10, "#c0284a", 2, 1); P(g, 4, 14, "#8a1830", 8, 1); });
+  ICONS.bouquet = mk(16, 16, (g) => { P(g, 6, 9, "#3f8a45", 4, 6); P(g, 5, 10, "#f4e9d0", 6, 3); circle(g, 5, 5, 2, "#f08cb0"); circle(g, 10, 5, 2, "#f7e26b"); circle(g, 8, 3, 2, "#c88cf0"); circle(g, 8, 7, 2, "#ff8a6a"); });
+  ICONS.soup = mk(16, 16, (g) => { P(g, 2, 8, "#e8e0d0", 12, 2); P(g, 3, 10, "#d8d0c0", 10, 3); P(g, 5, 13, "#b8b0a0", 6, 1); P(g, 3, 7, "#c88a40", 10, 2); P(g, 5, 7, "#d0342c", 2, 1); P(g, 9, 7, "#f2e6d0", 2, 1); P(g, 6, 2, "#ffffff88", 1, 4); P(g, 9, 3, "#ffffff88", 1, 3); });
+  ICONS.potion = mk(16, 16, (g) => { P(g, 7, 1, "#8b5a2b", 2, 2); P(g, 6, 3, "#c8e8f0", 4, 3); circle(g, 8, 10, 5, "#c8e8f0"); circle(g, 8, 11, 4, "#5ac87a"); P(g, 6, 9, "#b0f0c0", 2, 2); });
+  ICONS.shell = mk(16, 16, (g) => { for (let i = 0; i < 6; i++) P(g, 8 - i, 3 + i, "#f4c8b8", 1 + i * 2, 1); P(g, 2, 9, "#f4c8b8", 12, 3); P(g, 4, 12, "#e8a898", 8, 2); for (const x of [4, 7, 10]) P(g, x, 5 + Math.abs(7 - x) / 2, "#d88878", 1, 7 - Math.abs(7 - x) / 2); P(g, 7, 2, "#fff0e8", 2, 1); });
+  ICONS.coconut = mk(16, 16, (g) => { circle(g, 8, 9, 6, "#6b4226"); circle(g, 7, 8, 4, "#8b5a2b"); P(g, 6, 6, "#a8763e", 2, 1); P(g, 9, 11, "#3a2210", 1, 1); P(g, 7, 12, "#3a2210", 1, 1); P(g, 10, 13, "#3a2210", 1, 1); });
+  ICONS.necklace = mk(16, 16, (g) => { for (let a = 0; a < 14; a++) { const t = a / 13 * Math.PI; P(g, Math.round(8 - Math.cos(t) * 6), Math.round(3 + Math.sin(t) * 7), "#c9a66b"); } P(g, 6, 10, "#f4c8b8", 4, 4); P(g, 7, 9, "#f4c8b8", 2, 1); P(g, 7, 11, "#d88878", 2, 2); P(g, 3, 7, "#8ec5e8", 2, 2); P(g, 11, 7, "#8ec5e8", 2, 2); });
+  ICONS.cjuice = mk(16, 16, (g) => { circle(g, 8, 10, 5, "#6b4226"); P(g, 3, 6, "#6b4226", 10, 3); P(g, 4, 6, "#f4f0e0", 8, 2); P(g, 10, 1, "#e05070", 1, 7); P(g, 10, 1, "#e05070", 3, 1); P(g, 4, 3, "#58b368", 3, 2); });
+  // 升級、交通工具、武器的圖示
+  ICONS.up_backpack = mk(16, 16, (g) => { P(g, 5, 1, "#6b4226", 6, 2); P(g, 5, 1, "#6b4226", 1, 4); P(g, 10, 1, "#6b4226", 1, 4); P(g, 2, 4, "#5a3a20", 12, 11); P(g, 3, 4, "#a0683a", 10, 10); P(g, 3, 4, "#c08850", 10, 2); P(g, 4, 8, "#8b5a2b", 8, 5); P(g, 4, 8, "#a8763e", 8, 1); P(g, 7, 9, "#e0c040", 2, 2); });
+  ICONS.up_tool = mk(16, 16, (g) => { for (let i = 0; i < 11; i++) P(g, 4 + i, 14 - i, "#8b5a2b", 2, 2); P(g, 8, 1, "#5a5a6a", 7, 6); P(g, 9, 2, "#b8c0cc", 6, 4); P(g, 9, 2, "#e8ecf4", 6, 1); P(g, 14, 2, "#ffffff", 1, 4); });
+  ICONS.up_shelfSlots = mk(16, 16, (g) => { P(g, 1, 1, "#5a3a20", 14, 14); P(g, 2, 2, "#a8763e", 12, 12); for (const y of [5, 9, 13]) P(g, 2, y, "#6b4226", 12, 1); P(g, 3, 3, "#d23c5a", 2, 2); P(g, 6, 3, "#3f8a45", 2, 2); P(g, 4, 7, "#e8a820", 3, 2); P(g, 9, 7, "#d0342c", 2, 2); P(g, 3, 11, "#c88cf0", 2, 2); P(g, 9, 2, "#3f9a4f", 5, 3); P(g, 11, 2, "#fff", 1, 3); P(g, 10, 3, "#fff", 3, 1); });
+  ICONS.up_shelfCap = mk(16, 16, (g) => { for (const [x, y] of [[1, 8], [8, 8], [4, 2]]) { P(g, x, y, "#7a4a28", 7, 7); P(g, x + 1, y + 1, "#c99a64", 5, 5); P(g, x + 3, y + 1, "#7a4a28", 1, 5); } });
+  ICONS.up_shoes = mk(16, 16, (g) => { P(g, 3, 6, "#d04a4a", 6, 6); P(g, 3, 9, "#d04a4a", 11, 3); P(g, 3, 12, "#f4f0e0", 12, 2); P(g, 4, 7, "#fff", 4, 1); P(g, 5, 9, "#fff", 3, 1); P(g, 0, 7, "#8ec5e8", 2, 1); P(g, 0, 10, "#8ec5e8", 2, 1); });
+  ICONS.up_farm = mk(16, 16, (g) => { P(g, 1, 9, "#5a3a20", 14, 6); for (const y of [10, 13]) P(g, 1, y, "#7a5236", 14, 1); P(g, 7, 4, "#3f8a45", 2, 6); circle(g, 5, 4, 2, "#58b368"); circle(g, 11, 3, 2, "#58b368"); });
+  ICONS.up_can = mk(16, 16, (g) => { P(g, 3, 6, "#3a7ad0", 8, 8); P(g, 3, 6, "#6a9ae0", 8, 2); P(g, 11, 8, "#3a7ad0", 3, 2); P(g, 13, 6, "#3a7ad0", 2, 3); P(g, 5, 3, "#2a5aa0", 4, 1); P(g, 4, 3, "#2a5aa0", 1, 3); P(g, 9, 3, "#2a5aa0", 1, 3); P(g, 15, 5, "#9fd0ff"); P(g, 14, 3, "#9fd0ff"); });
+  ICONS.up_skill = mk(16, 16, (g) => { P(g, 3, 6, "#e8c050", 9, 8); P(g, 3, 2, "#e8c050", 2, 5); P(g, 6, 1, "#e8c050", 2, 6); P(g, 9, 2, "#e8c050", 2, 5); P(g, 12, 7, "#e8c050", 3, 3); P(g, 4, 7, "#f8e090", 6, 2); P(g, 3, 13, "#b08a30", 9, 1); P(g, 13, 1, "#fff7a0", 1, 3); P(g, 12, 2, "#fff7a0", 3, 1); });
+  ICONS.up_decor = mk(16, 16, (g) => { P(g, 7, 1, "#5a3a20", 2, 3); P(g, 4, 4, "#5a3a20", 8, 2); P(g, 5, 6, "#ffe080", 6, 6); P(g, 6, 7, "#fff7d0", 2, 3); P(g, 4, 12, "#5a3a20", 8, 2); P(g, 1, 8, "#ffe08088", 2, 1); P(g, 13, 8, "#ffe08088", 2, 1); P(g, 7, 14, "#5a3a20", 2, 2); });
+  ICONS.v_skate = mk(16, 16, (g) => { P(g, 1, 8, "#d04a4a", 14, 3); P(g, 0, 7, "#d04a4a", 2, 2); P(g, 14, 7, "#d04a4a", 2, 2); P(g, 2, 8, "#f08a6a", 12, 1); circle(g, 4, 12, 1, "#2b1d14"); circle(g, 12, 12, 1, "#2b1d14"); });
+  ICONS.v_bike = mk(16, 16, (g) => { for (const x of [4, 12]) { circle(g, x, 11, 3, "#2b1d14"); circle(g, x, 11, 2, "#c8c8d0"); P(g, x, 11, "#2b1d14"); } P(g, 4, 7, "#3a7ad0", 8, 2); P(g, 7, 7, "#3a7ad0", 2, 4); P(g, 11, 3, "#2b1d14", 2, 5); P(g, 10, 3, "#8a8a9a", 4, 1); P(g, 3, 5, "#2b1d14", 3, 1); });
+  ICONS.v_horse = mk(16, 16, (g) => { P(g, 2, 6, "#a0683a", 10, 5); P(g, 2, 6, "#b8804a", 10, 1); P(g, 10, 1, "#a0683a", 4, 7); P(g, 13, 3, "#a0683a", 2, 2); P(g, 12, 2, "#2b1d14"); P(g, 9, 1, "#5a3a20", 2, 6); P(g, 0, 6, "#5a3a20", 2, 5); for (const x of [3, 5, 9, 11]) P(g, x, 11, "#6b4226", 1, 4); P(g, 5, 5, "#d04a4a", 4, 2); });
+  ICONS.w_knife = mk(16, 16, (g) => { for (let i = 0; i < 7; i++) P(g, 7 + i, 8 - i, "#c8d0dc", 2, 2); P(g, 8, 7, "#ffffff", 1, 1); P(g, 5, 8, "#6b4226", 3, 3); for (let i = 0; i < 4; i++) P(g, 2 + i, 13 - i, "#8b5a2b", 2, 2); });
+  ICONS.w_sword = mk(16, 16, (g) => { for (let i = 0; i < 9; i++) P(g, 5 + i, 10 - i, "#c8d0dc", 2, 2); for (let i = 0; i < 9; i++) P(g, 6 + i, 10 - i, "#ffffff", 1, 1); P(g, 2, 9, "#e0b040", 6, 2); P(g, 4, 7, "#e0b040", 2, 6); for (let i = 0; i < 3; i++) P(g, 1 + i, 14 - i, "#6b4226", 2, 2); });
+  ICONS.w_bow = mk(16, 16, (g) => { for (let a = 0; a < 12; a++) { const t = a / 11 * Math.PI; P(g, Math.round(4 + Math.sin(t) * 5), Math.round(2 + a), "#8b5a2b", 2, 1); } P(g, 4, 2, "#f4f0e0", 1, 12); for (let i = 0; i < 10; i++) P(g, 4 + i, 8, "#a8763e"); P(g, 14, 7, "#c8d0dc", 2, 3); P(g, 3, 7, "#d04a4a", 2, 3); });
+  ICONS.coin = mk(16, 16, (g) => { circle(g, 8, 8, 6, "#b8860b"); circle(g, 8, 8, 5, "#f2c230"); P(g, 7, 4, "#fff3b0", 2, 8); P(g, 6, 5, "#ffe27a", 1, 6); });
+}
+const iconURL = {};
+function icon(name) { if (!iconURL[name]) iconURL[name] = ICONS[name].toDataURL(); return iconURL[name]; }
+
+// 地圖格
+const TILE = { GRASS: 0, GRASS2: 1, PATH: 2, WATER: 3, TREE: 4, FENCE: 5, FLOOR: 6, WALL: 7, BRIDGE: 8, BROKEN: 9, DARK: 10, WALLTOP: 11, SAND: 12, PALMWALL: 13 };
+const SOLID_TILES = new Set([TILE.WATER, TILE.TREE, TILE.FENCE, TILE.WALL, TILE.BROKEN, TILE.WALLTOP, TILE.PALMWALL]);
+const tileImgs = {};
+function grassTile(base, dark, light, seed, flowers) {
+  const r = seeded(seed);
+  return mk(16, 16, (g) => {
+    P(g, 0, 0, base, 16, 16);
+    for (let i = 0; i < 14; i++) P(g, Math.floor(r() * 16), Math.floor(r() * 16), r() < 0.5 ? dark : light);
+    for (let i = 0; i < 3; i++) { const x = Math.floor(r() * 14), y = Math.floor(r() * 13); P(g, x, y, dark); P(g, x + 1, y - 1 < 0 ? 0 : y - 1, dark); }
+    if (flowers) for (let i = 0; i < 3; i++) { const x = 1 + Math.floor(r() * 13), y = 1 + Math.floor(r() * 13); P(g, x, y, r() < 0.5 ? "#f7e26b" : "#f4a3c4"); }
+  });
+}
+function makeTiles() {
+  tileImgs[TILE.GRASS] = [0, 1, 2, 3].map((i) => grassTile("#6aab4f", "#5a9a44", "#7cbd5c", 11 + i, false));
+  tileImgs[TILE.GRASS2] = [0, 1].map((i) => grassTile("#6aab4f", "#5a9a44", "#7cbd5c", 31 + i, true));
+  tileImgs[TILE.DARK] = [0, 1, 2].map((i) => grassTile("#4f8a3f", "#447a36", "#5c9a4a", 51 + i, false));
+  tileImgs[TILE.PATH] = [0, 1].map((i) => { const r = seeded(70 + i); return mk(16, 16, (g) => { P(g, 0, 0, "#d4b483", 16, 16); for (let k = 0; k < 10; k++) P(g, Math.floor(r() * 16), Math.floor(r() * 16), r() < 0.5 ? "#c4a070" : "#e0c595"); }); });
+  tileImgs[TILE.WATER] = [0, 1].map((f) => mk(16, 16, (g) => { P(g, 0, 0, "#3f7fd0", 16, 16); for (let y = 2; y < 16; y += 5) { P(g, (f * 4 + y * 3) % 12, y, "#7fb2ee", 4, 1); P(g, (f * 4 + y * 3 + 8) % 14, y + 2, "#5b98e0", 3, 1); } }));
+  tileImgs[TILE.TREE] = [0, 1].map((i) => mk(16, 16, (g) => {
+    g.drawImage(tileImgs[TILE.GRASS][i], 0, 0); circle(g, 8, 7, 7, "#24522a"); circle(g, 8, 6, 6, "#2f6b34"); circle(g, 6, 4, 3, "#3f8a45"); P(g, 5, 2, "#58a85e", 2, 1); P(g, 7, 13, "#5a3a20", 2, 3);
+  }));
+  tileImgs[TILE.FENCE] = [mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.GRASS][0], 0, 0); P(g, 0, 6, "#a87a4a", 16, 2); P(g, 0, 10, "#a87a4a", 16, 2); P(g, 2, 4, "#7a5230", 3, 10); P(g, 11, 4, "#7a5230", 3, 10); P(g, 2, 4, "#c99a64", 3, 1); P(g, 11, 4, "#c99a64", 3, 1); })];
+  tileImgs[TILE.FLOOR] = [0, 1].map((broken) => mk(16, 16, (g) => {
+    P(g, 0, 0, broken ? "#8a6a50" : "#b07a4a", 16, 16);
+    for (let y = 3; y < 16; y += 4) P(g, 0, y, broken ? "#6e5240" : "#8f5f36", 16, 1);
+    P(g, 6, 0, broken ? "#6e5240" : "#8f5f36", 1, 3); P(g, 12, 4, broken ? "#6e5240" : "#8f5f36", 1, 3); P(g, 3, 8, broken ? "#6e5240" : "#8f5f36", 1, 3); P(g, 10, 12, broken ? "#6e5240" : "#8f5f36", 1, 3);
+    if (broken) { P(g, 4, 5, "#4a3628", 3, 1); P(g, 6, 6, "#4a3628", 2, 1); P(g, 11, 9, "#4a3628", 1, 3); }
+  }));
+  tileImgs[TILE.WALL] = [mk(16, 16, (g) => { P(g, 0, 0, "#e8d8b8", 16, 10); P(g, 0, 10, "#a07a58", 16, 6); P(g, 0, 10, "#7a5a40", 16, 1); for (let x = 0; x < 16; x += 4) P(g, x, 11, "#8e6a4c", 1, 5); })];
+  tileImgs[TILE.WALLTOP] = [mk(16, 16, (g) => { P(g, 0, 0, "#5a3b22", 16, 16); P(g, 0, 13, "#7a5236", 16, 3); })];
+  tileImgs[TILE.BRIDGE] = [mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.WATER][0], 0, 0); P(g, 0, 1, "#a8763e", 16, 14); for (let x = 0; x < 16; x += 4) P(g, x, 1, "#7a5230", 1, 14); P(g, 0, 1, "#c99a64", 16, 1); P(g, 0, 14, "#5a3a20", 16, 1); })];
+  tileImgs[TILE.SAND] = [0, 1, 2].map((i) => { const r = seeded(140 + i); return mk(16, 16, (g) => { P(g, 0, 0, "#ecd9a0", 16, 16); for (let k = 0; k < 12; k++) P(g, Math.floor(r() * 16), Math.floor(r() * 16), r() < 0.5 ? "#dcc488" : "#f8ecc0"); }); });
+  tileImgs[TILE.PALMWALL] = [0, 1].map((i) => mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.SAND][i], 0, 0); P(g, 6, 6, "#8b5a2b", 3, 10); circle(g, 8, 5, 6, "#2f7a3a"); circle(g, 7, 4, 3, "#58b368"); }));
+  tileImgs[TILE.BROKEN] = [0, 1].map((i) => mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.WATER][0], 0, 0); P(g, i ? 1 : 6, 3, "#8a6a40", 5, 3); P(g, i ? 8 : 2, 10, "#7a5a36", 6, 2); }));
+}
+
+/* ---------------- 場景 ---------------- */
+const scenes = {};
+function makeScene(name, w, h, fill) {
+  return { name, w, h, tiles: new Array(w * h).fill(fill), solid: new Uint8Array(w * h), ents: [], warps: [], outdoor: name !== "shop" };
+}
+const tileAt = (sc, x, y) => (x < 0 || y < 0 || x >= sc.w || y >= sc.h) ? TILE.TREE : sc.tiles[y * sc.w + x];
+function setTile(sc, x, y, t) { if (x >= 0 && y >= 0 && x < sc.w && y < sc.h) sc.tiles[y * sc.w + x] = t; }
+function rect(sc, x0, y0, x1, y1, t) { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) setTile(sc, x, y, t); }
+function ellipse(sc, cx, cy, rx, ry, t) { for (let y = cy - ry; y <= cy + ry; y++) for (let x = cx - rx; x <= cx + rx; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) setTile(sc, x, y, t); }
+function addEnt(sc, e) {
+  e.w = e.w || 1; e.h = e.h || 1;
+  if (e.clearTo !== undefined) for (let y = e.ty; y < e.ty + e.h; y++) for (let x = e.tx; x < e.tx + e.w; x++) if (SOLID_TILES.has(tileAt(sc, x, y))) setTile(sc, x, y, e.clearTo);
+  sc.ents.push(e); return e;
+}
+function rebuildSolid(sc) {
+  sc.solid.fill(0);
+  for (let i = 0; i < sc.tiles.length; i++) if (SOLID_TILES.has(sc.tiles[i])) sc.solid[i] = 1;
+  for (const e of sc.ents) {
+    if (!e.solid) continue;
+    for (let y = e.ty; y < e.ty + e.h; y++) for (let x = e.tx; x < e.tx + e.w; x++) {
+      if (e.door && !e.closed && x === e.door.x && y === e.door.y) continue;
+      if (x >= 0 && y >= 0 && x < sc.w && y < sc.h) sc.solid[y * sc.w + x] = 1;
+    }
+  }
+}
+
+function walker(sc, id, name, tx, ty, look, lines) {
+  return addEnt(sc, { id, type: "npc", walker: true, name, tx, ty, home: { x: tx, y: ty }, look, lines, dir: "down", px: tx * T + 8, py: ty * T + 12, wait: rand() * 2 });
+}
+function buildVillage() {
+  const sc = makeScene("village", 40, 26, TILE.GRASS);
+  const r = seeded(7);
+  for (let i = 0; i < sc.tiles.length; i++) if (r() < 0.08) sc.tiles[i] = TILE.GRASS2;
+  rect(sc, 0, 0, 39, 1, TILE.TREE); rect(sc, 0, 24, 39, 25, TILE.TREE); rect(sc, 0, 0, 0, 25, TILE.TREE); rect(sc, 39, 0, 39, 25, TILE.TREE);
+  rect(sc, 1, 12, 39, 13, TILE.PATH);
+  rect(sc, 8, 9, 8, 11, TILE.PATH); rect(sc, 18, 9, 18, 11, TILE.PATH); rect(sc, 30, 9, 30, 11, TILE.PATH);
+  rect(sc, 20, 14, 21, 17, TILE.PATH); rect(sc, 17, 18, 24, 18, TILE.PATH);
+  rect(sc, 3, 19, 9, 22, TILE.WATER); rect(sc, 2, 20, 2, 21, TILE.WATER);
+  rect(sc, 12, 20, 16, 20, TILE.FENCE); rect(sc, 26, 21, 29, 21, TILE.FENCE);
+  for (const [x, y] of [[13, 3], [24, 3], [36, 4], [2, 9], [37, 18], [35, 22], [11, 23]]) setTile(sc, x, y, TILE.TREE);
+  addEnt(sc, { id: "b_shop", type: "building", tx: 5, ty: 4, w: 7, h: 5, solid: true, door: { x: 8, y: 8 }, roof: "#b04a3a", roofDark: "#7e2f24", sign: "SHOP" });
+  addEnt(sc, { id: "b_mayor", type: "building", tx: 15, ty: 4, w: 7, h: 5, solid: true, door: { x: 18, y: 8 }, closed: true, roof: "#3a6ab0", roofDark: "#264a80" });
+  addEnt(sc, { id: "b_work", type: "building", tx: 27, ty: 4, w: 7, h: 5, solid: true, door: { x: 30, y: 8 }, closed: true, roof: "#7a6a3a", roofDark: "#544826", sign: "TOOLS" });
+  addEnt(sc, { id: "mayor", type: "npc", name: "村長", tx: 17, ty: 10, solid: true, dir: "down", look: { hair: "#e8e8e8", shirt: "#3f8a5a", pants: "#5a4a3a" } });
+  addEnt(sc, { id: "craft", type: "npc", name: "工匠阿木", tx: 31, ty: 10, solid: true, dir: "down", look: { hair: "#5a3a20", shirt: "#d9822b", pants: "#3a3a4a" } });
+  addEnt(sc, { id: "granny", type: "npc", name: "雜貨婆婆", tx: 23, ty: 15, solid: true, dir: "down", look: { hair: "#b8b0c8", shirt: "#9a5fb0", pants: "#6a4a7a" } });
+  addEnt(sc, { id: "fountain", type: "fountain", tx: 19, ty: 15, w: 2, h: 2, solid: true });
+  setTile(sc, 19, 15, TILE.GRASS); setTile(sc, 20, 15, TILE.GRASS); setTile(sc, 19, 16, TILE.GRASS); setTile(sc, 20, 16, TILE.GRASS);
+  addEnt(sc, { id: "board", type: "board", tx: 13, ty: 14, solid: true });
+  addEnt(sc, { id: "sign_forest", type: "sign", tx: 37, ty: 11, solid: true, text: "→ 森林" });
+  for (const [x, y] of [[10, 17], [32, 17], [34, 18], [24, 21], [36, 16]]) addEnt(sc, { id: `v_flower_${x}_${y}`, type: "node", kind: "flower", tx: x, ty: y, clearTo: TILE.GRASS });
+  // 農田：6×2 塊，一開始可用 6 塊
+  for (let i = 0; i < FARM_PLOTS; i++) addEnt(sc, { id: `plot${i}`, type: "plot", idx: i, tx: 2 + (i % 6), ty: 15 + Math.floor(i / 6) });
+  addEnt(sc, { id: "sign_farm", type: "sign", tx: 8, ty: 15, solid: true, text: "農田：播種 → 澆水 → 收成" });
+  addEnt(sc, { id: "dock", type: "dock", tx: 10, ty: 21 });
+  addEnt(sc, { id: "fisher", type: "npc", name: "釣魚爺爺", tx: 11, ty: 19, solid: true, dir: "left", look: { hair: "#d8d8d8", shirt: "#4a6a8a", pants: "#5a4a3a" } });
+  addEnt(sc, { id: "stall", type: "stall", tx: 22, ty: 14, w: 3, h: 1, solid: true });
+  addEnt(sc, { id: "wheel", type: "npc", name: "車行阿輪", tx: 25, ty: 10, solid: true, dir: "down", look: { hair: "#1a1a2a", shirt: "#3aa0a0", pants: "#3a3a4a" } });
+  addEnt(sc, { id: "bikes", type: "bikes", tx: 24, ty: 9, solid: true });
+  addEnt(sc, { id: "sign_beach", type: "sign", tx: 32, ty: 22, solid: true, text: "↓ 海邊（找村長開通）" });
+  walker(sc, "w_kid", "小明", 12, 13, { hair: "#2b1d14", shirt: "#e0a020" }, ["Hi! 我是小明，我最喜歡吃 apple 了！", "Let's play! 等我寫完功課再一起玩！", "我長大也要開一間商店！"]);
+  walker(sc, "w_girl", "小花", 25, 12, { hair: "#c0442c", shirt: "#e07aa0" }, ["Good morning! 早安！", "你的商店好可愛喔！", "Thank you! 上次買的東西好棒！"]);
+  walker(sc, "w_post", "郵差阿德", 33, 13, { hair: "#5a3a20", shirt: "#3a6ab0" }, ["Hello! 今天也要努力送信。", "See you! 我要去下一家了。", "聽說森林裡有寶箱喔！"]);
+  walker(sc, "w_lady", "王阿姨", 16, 17, { hair: "#6b3a1a", shirt: "#5aa05a" }, ["Nice to meet you! 很高興認識你！", "我在找新鮮的莓果……你的店有賣嗎？", "Have a nice day! 祝你有美好的一天！"]);
+  walker(sc, "w_boy", "阿傑", 6, 13, { hair: "#d9a03a", shirt: "#3f9a4f" }, ["Wow! 你的背包好大！", "我最喜歡釣魚了，池塘那邊有大魚！", "Goodbye! 掰掰！"]);
+  sc.warps.push({ x: 8, y: 8, w: 1, h: 1, to: "shop", tx: 8, ty: 9.6, dir: "up" });
+  sc.warps.push({ x: 39, y: 12, w: 1, h: 2, to: "forest", tx: 1.6, ty: 17.4, dir: "right" });
+  sc.warps.push({ x: 30, y: 25, w: 2, h: 1, to: "beach", tx: 20, ty: 2.6, dir: "down" });
+  rect(sc, 30, 14, 31, 25, TILE.PATH);
+  sc.spawn = { tx: 8.5, ty: 10.4 };
+  rebuildSolid(sc); return sc;
+}
+
+function buildForest() {
+  const sc = makeScene("forest", 52, 34, TILE.TREE);
+  const G = TILE.GRASS;
+  ellipse(sc, 9, 8, 6, 5, G); ellipse(sc, 22, 7, 7, 4, G); ellipse(sc, 11, 26, 7, 5, G); ellipse(sc, 27, 25, 7, 5, G); ellipse(sc, 29, 15, 5, 4, G);
+  rect(sc, 1, 15, 35, 18, G);
+  rect(sc, 0, 16, 35, 17, TILE.PATH);
+  rect(sc, 10, 9, 11, 15, TILE.PATH); rect(sc, 22, 8, 23, 15, TILE.PATH); rect(sc, 12, 18, 13, 24, TILE.PATH); rect(sc, 27, 18, 28, 23, TILE.PATH);
+  rect(sc, 36, 0, 37, 33, TILE.WATER);
+  rect(sc, 36, 16, 37, 17, TILE.BROKEN);
+  ellipse(sc, 45, 10, 6, 6, TILE.DARK); ellipse(sc, 45, 23, 6, 6, TILE.DARK); rect(sc, 38, 13, 50, 20, TILE.DARK);
+  rect(sc, 38, 16, 46, 17, TILE.PATH); rect(sc, 44, 8, 45, 26, TILE.PATH);
+  const r = seeded(99);
+  for (let i = 0; i < sc.tiles.length; i++) if (sc.tiles[i] === G && r() < 0.06) sc.tiles[i] = TILE.GRASS2;
+  const node = (kind, x, y) => addEnt(sc, { id: `f_${kind}_${x}_${y}`, type: "node", kind, tx: x, ty: y, solid: kind !== "herb" && kind !== "flower" && kind !== "mushroom", clearTo: x >= 38 ? TILE.DARK : G });
+  for (const [x, y] of [[6, 6], [13, 5], [5, 10], [14, 10], [31, 13], [33, 17], [7, 24], [15, 28], [24, 23], [19, 5]]) node("tree", x, y);
+  for (const [x, y] of [[6, 27], [9, 29], [25, 27], [31, 26], [17, 9], [3, 14]]) node("bush", x, y);
+  for (const [x, y] of [[26, 5], [20, 10], [15, 24], [30, 22], [21, 27], [32, 12]]) node("herb", x, y);
+  for (const [x, y] of [[8, 13], [26, 15]]) node("flower", x, y);
+  for (const [x, y] of [[41, 8], [48, 11], [42, 22], [48, 25], [40, 14]]) node("mushroom", x, y);
+  for (const [x, y] of [[47, 18], [41, 26]]) node("hive", x, y);
+  for (const [x, y] of [[4, 5], [33, 28], [48, 6]]) node("chest", x, y);
+  addEnt(sc, { id: "fox", type: "npc", name: "小狐狸", fox: true, tx: 24, ty: 6, solid: true, clearTo: G });
+  for (const [i, x, y] of [[0, 4, 26], [1, 31, 23], [2, 27, 4]]) addEnt(sc, { id: `lost_${i}`, type: "lost", idx: i, tx: x, ty: y, clearTo: G });
+  walker(sc, "w_travel", "旅人", 18, 16, { hair: "#3a3a6a", shirt: "#8a5a3a" }, ["Hello, friend! 我正在環遊世界。", "森林的另一邊有蜂蜜喔，可惜橋壞了。", "Good luck! 祝你好運！"]);
+  sc.warps.push({ x: 0, y: 16, w: 1, h: 2, to: "village", tx: 37.6, ty: 13.4, dir: "left" });
+  sc.spawn = { tx: 1.6, ty: 17.4 };
+  rebuildSolid(sc); return sc;
+}
+
+function buildBeach() {
+  const sc = makeScene("beach", 40, 24, TILE.SAND);
+  rect(sc, 0, 0, 39, 0, TILE.PALMWALL); rect(sc, 0, 0, 0, 23, TILE.PALMWALL); rect(sc, 39, 0, 39, 23, TILE.PALMWALL);
+  for (let x = 0; x < 40; x++) { const top = 17 + (Math.sin(x * 0.7) > 0.3 ? 1 : 0) + (x % 7 === 0 ? -1 : 0); rect(sc, x, top, x, 23, TILE.WATER); }
+  rect(sc, 19, 0, 20, 4, TILE.PATH);
+  const node = (kind, x, y) => addEnt(sc, { id: `b_${kind}_${x}_${y}`, type: "node", kind, tx: x, ty: y, solid: kind === "palm", clearTo: TILE.SAND });
+  for (const [x, y] of [[4, 4], [9, 3], [14, 6], [26, 3], [33, 5], [36, 10], [3, 11]]) node("palm", x, y);
+  for (const [x, y] of [[6, 15], [11, 16], [16, 14], [22, 15], [27, 16], [32, 14], [35, 15], [8, 12], [24, 11]]) node("shell", x, y);
+  addEnt(sc, { id: "b_chest", type: "node", kind: "chest", loot: ["shell", "coconut"], tx: 37, ty: 14, clearTo: TILE.SAND });
+  addEnt(sc, { id: "b_hut", type: "building", tx: 27, ty: 4, w: 5, h: 5, solid: true, door: { x: 29, y: 8 }, closed: true, roof: "#2a8a8a", roofDark: "#1c6060" });
+  addEnt(sc, { id: "fisherman", type: "npc", name: "漁夫阿海", tx: 25, ty: 10, solid: true, dir: "down", look: { hair: "#3a2a1a", shirt: "#e8e0d0", pants: "#3a5a8a" } });
+  walker(sc, "w_tour", "遊客小美", 15, 10, { hair: "#e0b040", shirt: "#e07aa0" }, ["Hello! 我是來玩的遊客。", "海邊的貝殼好漂亮！", "Wow! 這裡的椰子好好喝！"]);
+  walker(sc, "w_surf", "衝浪阿翔", 31, 12, { hair: "#c06a3a", shirt: "#3a7ad0" }, ["Cool! 今天的浪好大！", "Let's go swimming! 一起去游泳吧！", "聽說漁夫阿海知道很多事情。"]);
+  sc.warps.push({ x: 19, y: 0, w: 2, h: 1, to: "village", tx: 31, ty: 23.4, dir: "up" });
+  sc.spawn = { tx: 20, ty: 2.6 };
+  rebuildSolid(sc); return sc;
+}
+function buildShop() {
+  const sc = makeScene("shop", 16, 11, TILE.FLOOR);
+  rect(sc, 0, 0, 15, 0, TILE.WALLTOP); rect(sc, 0, 1, 15, 2, TILE.WALL);
+  rect(sc, 0, 0, 0, 10, TILE.WALLTOP); rect(sc, 15, 0, 15, 10, TILE.WALLTOP); rect(sc, 0, 10, 15, 10, TILE.WALLTOP);
+  setTile(sc, 7, 10, TILE.FLOOR); setTile(sc, 8, 10, TILE.FLOOR);
+  [[2, 3], [4, 3], [6, 3], [2, 6], [4, 6], [6, 6]].forEach(([x, y], i) => addEnt(sc, { id: `shelf${i}`, type: "shelf", slot: i, tx: x, ty: y, solid: true }));
+  addEnt(sc, { id: "counter", type: "counter", tx: 11, ty: 3, w: 3, h: 1, solid: true });
+  addEnt(sc, { id: "bed", type: "bed", tx: 13, ty: 7, w: 1, h: 2, solid: true });
+  addEnt(sc, { id: "bench", type: "bench", tx: 10, ty: 6, w: 2, h: 1, solid: true });
+  addEnt(sc, { id: "clock", type: "clock", tx: 14, ty: 7, solid: true });
+  addEnt(sc, { id: "plant1", type: "plant", tx: 1, ty: 3, solid: true });
+  addEnt(sc, { id: "plant2", type: "plant", tx: 14, ty: 3, solid: true });
+  sc.warps.push({ x: 7, y: 10, w: 2, h: 1, to: "village", tx: 8.5, ty: 9.7, dir: "down" });
+  sc.spawn = { tx: 8, ty: 9.6 };
+  rebuildSolid(sc); return sc;
+}
+
+/* ---------------- 存檔 ---------------- */
+let S = null;          // 目前存檔
+let dirty = false;
+function newSave(seat, look) {
+  return {
+    v: 1, seat, look, created: Date.now(),
+    scene: "village", x: 8.5 * T, y: 10.4 * T, dir: "down",
+    coins: 30, inv: {}, shelves: Array.from({ length: 6 }, () => ({ item: null, qty: 0, price: 0 })),
+    up: { backpack: 1, tool: 1, shelfSlots: 1, shelfCap: 1, shoes: 1, decor: 1 },
+    streak: 0, order: null, practice: { day: -1, count: 0 },
+    farm: Array.from({ length: FARM_PLOTS }, () => ({ c: null, g: 0, wet: false, dry: false })), seeds: { carrot: 3 },
+    min: 6 * 60, nodes: {}, nextCustomer: 7 * 60 + 20,
+    daily: null, main: { step: 0, foxStarted: false, found: [false, false, false] }, flags: { repaired: false, bridge: false },
+    talkedToday: [], npcQuizDay: {}, counters: { day: 0, sales: 0 },
+    stats: {}, log: [], settings: { music: 0.4, sfx: 0.7, speak: false }, recentQ: [], fishDay: { day: -1, n: 0 },
+    vehicles: [], ride: null, weapons: [], weapon: null, nextRaid: null,
+  };
+}
+/* ---------------- 雲端存檔（Google 表單寫入、回應試算表讀取） ----------------
+   老師建立表單後由 Claude 填入；留空表示只存在這台平板。 */
+const CLOUD = {
+  formId: "1FAIpQLSe9WFGWeHwLm8v2iYLx7sxvTHTuw-Djxg9lz8h-ejlNAcjXrQ",   // 表單「English Adventure Shop 存檔」
+  seatEntry: "533612722", dataEntry: "530993780", summaryEntry: "1623881879",
+  sheetUrl: "https://docs.google.com/spreadsheets/d/1t0VP3_enCMWrWWJ0GQP00UZd7lskUE1-qsp1u7Qgljs/edit#gid=1299907348",   // 回覆試算表
+  seatCol: "B", dataCol: "C",
+};
+const cloudOn = () => Boolean(CLOUD.formId && CLOUD.seatEntry && CLOUD.dataEntry && CLOUD.sheetUrl);
+let cloudDirty = false, cloudTimer = 0;
+function cloudPayload() {
+  const copy = { ...S, log: S.log.slice(-120) };
+  let s = JSON.stringify(copy);
+  if (s.length > 40000) { copy.log = []; s = JSON.stringify(copy); }
+  return s;
+}
+function summaryText() {
+  const n = S.log.length, ok = S.log.filter((l) => l.ok).length;
+  const weak = VOCAB.filter((w) => wordStat(w.key).w > 0).sort((a, b) => wordStat(b.key).w - wordStat(a.key).w).slice(0, 6).map((w) => w.en);
+  return `第 ${gameDay() + 1} 天・${S.coins} 金・作答 ${n} 題・正確率 ${n ? Math.round((ok / n) * 100) : 0}%・答錯較多：${weak.join(", ") || "無"}`;
+}
+async function cloudSave(beacon = false) {
+  if (!cloudOn() || !S) return false;
+  const body = new URLSearchParams();
+  body.set("entry." + CLOUD.seatEntry, "S" + S.seat);
+  body.set("entry." + CLOUD.dataEntry, cloudPayload());
+  if (CLOUD.summaryEntry) body.set("entry." + CLOUD.summaryEntry, summaryText());
+  const url = `https://docs.google.com/forms/d/e/${CLOUD.formId}/formResponse`;
+  cloudDirty = false; cloudTimer = 0;
+  try {
+    if (beacon && navigator.sendBeacon && navigator.sendBeacon(url, body)) return true;
+    await withTimeout(fetch(url, { method: "POST", mode: "no-cors", body }), 7000);
+    return true;
+  } catch { cloudDirty = true; return false; }
+}
+async function cloudLoad(seat) {
+  const src = sheetSource(CLOUD.sheetUrl);
+  const tq = `select ${CLOUD.dataCol} where ${CLOUD.seatCol} = 'S${seat}' order by A desc limit 1`;
+  const table = await withTimeout(gvizTable(src.id, src.gid, tq), 9000);
+  const cell = table.rows[0] && table.rows[0].c && table.rows[0].c[0] && table.rows[0].c[0].v;
+  return cell ? JSON.parse(cell) : null;
+}
+function storageOK() { try { localStorage.setItem("eas1_test", "1"); localStorage.removeItem("eas1_test"); return true; } catch { return false; } }
+function loadSave(seat) { try { const raw = localStorage.getItem(SAVE_PREFIX + seat); return raw ? JSON.parse(raw) : null; } catch { return null; } }
+function writeSave() {
+  if (!S) return;
+  S.savedAt = Date.now();
+  try { localStorage.setItem(SAVE_PREFIX + S.seat, JSON.stringify(S)); dirty = false; } catch { toast("這台平板無法存檔（儲存空間不足或被封鎖）", "bad"); }
+}
+function markDirty() { dirty = true; cloudDirty = true; }
+function listSaves() {
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(SAVE_PREFIX)) { const s = JSON.parse(localStorage.getItem(k)); if (s && s.seat) out.push(s); }
+    }
+  } catch { /* 無法讀取 */ }
+  return out.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+}
+
+/* ---------------- 狀態查詢 ---------------- */
+const upVal = (id) => UPGRADES[id].values[S.up[id] - 1];
+const capacity = () => upVal("backpack");
+const invCount = () => Object.values(S.inv).reduce((a, b) => a + b, 0);
+const has = (items) => Object.entries(items || {}).every(([k, n]) => (S.inv[k] || 0) >= n);
+function addItem(id, n) { S.inv[id] = (S.inv[id] || 0) + n; if (S.inv[id] <= 0) delete S.inv[id]; markDirty(); }
+function takeItems(items) { for (const [k, n] of Object.entries(items || {})) addItem(k, -n); }
+const gameDay = () => Math.floor(S.min / DAY);
+const minOfDay = () => S.min % DAY;
+const shopOpen = () => minOfDay() >= SHOP_OPEN && minOfDay() < SHOP_CLOSE;
+function timeLabel() {
+  const m = Math.floor(minOfDay()), h = Math.floor(m / 60), mm = m % 60;
+  const part = h >= 6 && h < 17 ? "白天" : h >= 17 && h < 19 ? "傍晚" : "夜晚";
+  return `第 ${gameDay() + 1} 天 ${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")} ${part}`;
+}
+function itemList(items) { return Object.entries(items || {}).map(([k, n]) => `${ITEMS[k].zh}×${n}`).join("、"); }
+function costText(c) { const parts = []; if (c.coins) parts.push(`${c.coins} 金`); if (c.items) parts.push(itemList(c.items)); return parts.join(" + "); }
+function nodeReady(e) { return (S.nodes[e.id] || 0) <= S.min; }
+
+/* ---------------- 音效與音樂（Web Audio 合成，不需音檔） ---------------- */
+const Sound = {
+  ac: null, sfxGain: null, musicGain: null, timer: null, step: 0, nextT: 0,
+  init() {
+    if (this.ac) { if (this.ac.state === "suspended") this.ac.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    this.ac = new AC();
+    this.sfxGain = this.ac.createGain(); this.sfxGain.connect(this.ac.destination);
+    this.musicGain = this.ac.createGain(); this.musicGain.connect(this.ac.destination);
+    this.apply();
+  },
+  apply() { if (!this.ac || !S) return; this.sfxGain.gain.value = S.settings.sfx * 0.5; this.musicGain.gain.value = S.settings.music * 0.18; },
+  tone(f, d, type = "square", v = 0.5, t0 = 0, dest = this.sfxGain, slide = 0) {
+    if (!this.ac) return;
+    const t = this.ac.currentTime + t0, o = this.ac.createOscillator(), g = this.ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.linearRampToValueAtTime(f + slide, t + d);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t + d + 0.02);
+  },
+  sfx(name) {
+    const n = { C5: 523, E5: 659, G5: 784, C6: 1047, A4: 440, E4: 330, B5: 988, E6: 1319 };
+    switch (name) {
+      case "click": this.tone(880, 0.05, "square", 0.25); break;
+      case "gather": this.tone(n.E5, 0.07, "square", 0.35); this.tone(n.G5, 0.09, "square", 0.35, 0.07); break;
+      case "right": [n.C5, n.E5, n.G5, n.C6].forEach((f, i) => this.tone(f, 0.12, "triangle", 0.6, i * 0.08)); break;
+      case "wrong": this.tone(392, 0.18, "triangle", 0.45); this.tone(330, 0.25, "triangle", 0.45, 0.16); break;
+      case "coin": this.tone(n.B5, 0.06, "square", 0.3); this.tone(n.E6, 0.18, "square", 0.3, 0.06); break;
+      case "up": [n.C5, n.E5, n.G5, n.C6, n.E6].forEach((f, i) => this.tone(f, 0.14, "square", 0.3, i * 0.07)); break;
+      case "door": this.tone(220, 0.12, "triangle", 0.4, 0, this.sfxGain, -80); break;
+      case "chest": this.tone(n.G5, 0.08, "square", 0.3); this.tone(n.C6, 0.08, "square", 0.3, 0.08); this.tone(n.E6, 0.2, "square", 0.3, 0.16); break;
+      case "step": this.tone(140, 0.03, "triangle", 0.12); break;
+      case "chop": this.noise(0.09, 1.2, 800); this.tone(150, 0.07, "square", 0.3, 0, this.sfxGain, -40); break;
+      case "pick": this.noise(0.06, 0.6, 2600); this.tone(1200, 0.04, "triangle", 0.2); break;
+      case "splash": this.noise(0.35, 0.7, 500); break;
+      case "alarm": for (let i = 0; i < 6; i++) this.tone(i % 2 ? 660 : 880, 0.22, "sawtooth", 0.3, i * 0.24); break;
+      case "swish": this.noise(0.08, 0.8, 3200); break;
+      case "hit": this.tone(200, 0.08, "square", 0.4, 0, this.sfxGain, -120); this.noise(0.06, 0.6, 900); break;
+      case "bow": this.tone(500, 0.1, "triangle", 0.3, 0, this.sfxGain, 600); break;
+    }
+  },
+  noise(d, v = 0.5, freq = 1000, t0 = 0, dest = this.sfxGain) {
+    if (!this.ac) return;
+    const len = Math.floor(this.ac.sampleRate * d), buf = this.ac.createBuffer(1, len, this.ac.sampleRate), data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+    const src = this.ac.createBufferSource(), f = this.ac.createBiquadFilter(), gn = this.ac.createGain();
+    src.buffer = buf; f.type = "bandpass"; f.frequency.value = freq; f.Q.value = 0.8; gn.gain.value = v;
+    src.connect(f); f.connect(gn); gn.connect(dest); src.start(this.ac.currentTime + t0);
+  },
+  // 背景音樂：每個場景一首曲子（數字是 MIDI 音高，0 是休止），換場景會自動換曲
+  THEMES: {
+    village: { spb: 0.24, wave: "triangle", vol: 0.5, len: 0.85, bassWave: "triangle", bassVol: 0.45, padVol: 0.12, drums: "k.h.s.h.", drumVol: 0.6,
+      mel: [72,0,76,79,76,0,74,72, 69,0,72,76,74,72,69,0, 65,69,72,0,77,76,74,72, 74,0,71,0,67,71,74,0,
+            79,0,76,79,81,79,76,72, 76,74,72,0,69,72,76,0, 77,0,76,74,72,74,76,0, 72,0,0,0,67,0,72,0],
+      bass: [48,55,45,52,41,48,43,50,48,55,45,52,41,43,48,48],
+      chords: [[60,64,67],[57,60,64],[53,57,60],[55,59,62],[60,64,67],[57,60,64],[53,57,62],[55,60,64]] },
+    forest: { spb: 0.34, wave: "sine", vol: 0.55, len: 1.6, bassWave: "sine", bassVol: 0.5, padVol: 0.16, birds: true,
+      mel: [76,0,0,72,74,0,76,0, 74,0,71,0,67,0,0,0, 72,0,74,76,77,0,76,74, 71,0,0,0,0,0,67,69,
+            72,0,76,0,81,0,79,76, 79,0,74,0,71,0,0,0, 72,74,76,0,77,76,74,72, 71,0,68,0,64,0,0,0],
+      bass: [45,45,43,43,41,41,40,40,45,45,43,43,41,41,40,40],
+      chords: [[57,60,64],[55,59,62],[53,57,60],[52,55,59],[57,60,64],[55,59,62],[53,57,60],[52,56,59]] },
+    beach: { spb: 0.27, wave: "triangle", vol: 0.5, len: 0.7, bassWave: "sine", bassVol: 0.6, padVol: 0.05, skank: true, drums: "..h.s.h.", drumVol: 0.45,
+      mel: [77,0,77,76,77,0,72,0, 76,0,74,72,74,0,0,0, 74,0,74,72,74,0,69,0, 70,72,74,0,72,0,0,0,
+            81,0,79,77,79,0,77,0, 76,0,72,0,74,76,72,0, 74,0,72,70,69,0,70,0, 72,0,0,0,65,0,0,0],
+      bass: [41,48,48,43,50,45,46,41,41,48,48,43,46,41,48,41],
+      chords: [[65,69,72],[64,67,72],[62,65,69],[62,65,70],[65,69,72],[64,67,72],[62,65,70],[64,67,72]] },
+    shop: { spb: 0.3, wave: "sine", vol: 0.45, len: 1.4, bassWave: "sine", bassVol: 0.4, padVol: 0.1, bell: true,
+      mel: [79,0,83,0,86,0,83,0, 84,0,83,79,76,0,0,0, 76,0,79,0,84,0,83,81, 79,0,78,0,74,0,0,0],
+      bass: [43,50,40,47,36,43,38,45],
+      chords: [[55,59,62],[52,55,59],[48,52,55],[50,54,57]] },
+    raid: { spb: 0.15, wave: "square", vol: 0.28, len: 0.8, bassWave: "square", bassVol: 0.3, bassEvery: true, drums: "khshkhsh", drumVol: 0.7,
+      mel: [76,0,76,79,76,0,74,71, 72,0,72,76,72,0,71,67, 74,0,74,78,74,0,72,69, 71,0,75,0,78,0,75,71],
+      bass: [40,40,36,36,38,38,35,35] },
+  },
+  themeName() { return raid ? "raid" : !scene ? "village" : scene.name in this.THEMES ? scene.name : "village"; },
+  startMusic() {
+    if (!this.ac || this.timer) return;
+    this.nextT = this.ac.currentTime + 0.1; this.cur = null;
+    const midi = (m) => 440 * 2 ** ((m - 69) / 12), mg = () => this.musicGain;
+    this.timer = setInterval(() => {
+      if (!this.ac || !S || this.ac.state !== "running") return;
+      const name = this.themeName();
+      if (name !== this.cur) { this.cur = name; this.step = 0; this.nextT = Math.max(this.nextT, this.ac.currentTime + 0.05); }
+      const th = this.THEMES[name], spb = th.spb;
+      while (this.nextT < this.ac.currentTime + 0.3) {
+        const i = this.step % th.mel.length, off = this.nextT - this.ac.currentTime, m = th.mel[i];
+        if (m) {
+          this.tone(midi(m), spb * th.len, th.wave, th.vol, off, mg());
+          if (th.bell) this.tone(midi(m + 12), spb * 0.6, "sine", th.vol * 0.25, off, mg());
+        }
+        if (th.bassEvery) this.tone(midi(th.bass[Math.floor(i / 4) % th.bass.length]), spb * 0.7, th.bassWave, th.bassVol, off, mg());
+        else if (i % 4 === 0) this.tone(midi(th.bass[Math.floor(i / 4) % th.bass.length]), spb * 3.6, th.bassWave, th.bassVol, off, mg());
+        if (th.chords && i % 8 === 0) for (const n of th.chords[Math.floor(i / 8) % th.chords.length]) this.tone(midi(n), spb * 7.6, "sine", th.padVol, off, mg());
+        if (th.skank && i % 4 === 2) for (const n of th.chords[Math.floor(i / 8) % th.chords.length]) this.tone(midi(n + 12), spb * 0.35, "triangle", 0.12, off, mg());
+        if (th.drums) {
+          const d = th.drums[i % th.drums.length], v = th.drumVol;
+          if (d === "k") this.tone(120, 0.12, "sine", 0.8 * v, off, mg(), -70);
+          else if (d === "s") this.noise(0.1, 0.5 * v, 1800, off, mg());
+          else if (d === "h") this.noise(0.03, 0.25 * v, 7000, off, mg());
+        }
+        if (th.birds && Math.random() < 0.025) { const f = 2200 + Math.random() * 1200; this.tone(f, 0.08, "sine", 0.12, off, mg(), 600); this.tone(f + 300, 0.06, "sine", 0.1, off + 0.11, mg(), 500); }
+        this.nextT += spb; this.step++;
+      }
+    }, 100);
+  },
+};
+function speak(text, force = false) {
+  try {
+    if ((!force && !S.settings.speak) || !window.speechSynthesis) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = "en-US"; u.rate = 0.85; speechSynthesis.speak(u);
+  } catch { /* 不支援語音 */ }
+}
+
+/* ---------------- 介面：提示與視窗 ---------------- */
+function toast(msg, cls = "") {
+  const el = document.createElement("div"); el.className = `toast ${cls}`; el.textContent = msg;
+  $("toasts").appendChild(el); setTimeout(() => el.remove(), 2700);
+  while ($("toasts").children.length > 4) $("toasts").firstChild.remove();
+}
+let modalHandlers = {}, modalOnClose = null;
+function openModal(html, handlers = {}, onClose = null) {
+  $("modal-box").innerHTML = html; modalHandlers = handlers; modalOnClose = onClose;
+  $("modal").hidden = false; $("modal-box").scrollTop = 0; input.reset();
+}
+function closeModal() { const cb = modalOnClose; $("modal").hidden = true; $("modal-box").innerHTML = ""; modalHandlers = {}; modalOnClose = null; if (cb) cb(); }
+const modalOpen = () => !$("modal").hidden;
+$("modal-box").addEventListener("click", (ev) => {
+  const el = ev.target.closest("[data-act]"); if (!el || el.disabled) return;
+  Sound.sfx("click");
+  const act = el.dataset.act;
+  if (act === "close") return closeModal();
+  if (modalHandlers[act]) modalHandlers[act](el);
+});
+$("modal").addEventListener("click", (ev) => { if (ev.target.id === "modal" && modalHandlers.__closable) closeModal(); });
+const closeBtn = `<button class="close-x" data-act="close">關閉</button>`;
+
+// 對話：lines 依序顯示，最後一句可帶選項
+function talk(name, lines, choices = null, after = null) {
+  const arr = Array.isArray(lines) ? lines : [lines];
+  let i = 0;
+  const show = () => {
+    const last = i === arr.length - 1;
+    const btns = last && choices
+      ? choices.map((c, k) => `<button class="btn ${c.alt ? "alt" : ""}" data-act="c${k}">${esc(c.label)}</button>`).join("")
+      : `<button class="btn" data-act="next">${last ? "好" : "繼續"}</button>`;
+    const h = { next: () => { if (last) { closeModal(); if (after) after(); } else { i++; show(); } } };
+    if (choices) choices.forEach((c, k) => { h["c" + k] = () => { closeModal(); if (c.fn) c.fn(); }; });
+    openModal(`<span class="speaker">${esc(name)}</span><p class="say">${esc(arr[i])}</p><div class="btn-row">${btns}</div>`, h);
+  };
+  show();
+}
+
+/* ---------------- 英文挑戰 ---------------- */
+let lastQuestionAt = 0;
+function wordStat(key) { return S.stats[key] || (S.stats[key] = { a: 0, c: 0, w: 0, first: null, recent: 0, rc: 0, m: 0, last: 0 }); }
+function recentWrongRate(s) { if (!s.rc) return 0.5; let wrong = 0; for (let i = 0; i < s.rc; i++) if (!((s.recent >> i) & 1)) wrong++; return wrong / s.rc; }
+function pickWord() {
+  if (!VOCAB.length) return null;
+  let cur = VOCAB.filter(isCurrent), old = VOCAB.filter((w) => !isCurrent(w));
+  if (!cur.length) { cur = VOCAB; old = []; }
+  const avgM = cur.reduce((a, w) => a + wordStat(w.key).m, 0) / cur.length;
+  const oldWeak = old.some((w) => recentWrongRate(wordStat(w.key)) > 0.5 && wordStat(w.key).rc > 0);
+  let oldShare = old.length ? 0.2 : 0;
+  if (old.length && (avgM >= 4 || oldWeak)) oldShare = 0.35;
+  const group = rand() < oldShare ? old : cur;
+  const now = Date.now();
+  const weights = group.map((w) => {
+    const s = wordStat(w.key);
+    let wt = 1 + 2 * recentWrongRate(s);
+    wt *= 1 + Math.min(1, (now - (s.last || 0)) / 86400000);
+    if (S.recentQ.includes(w.key)) wt *= 0.1;
+    if (!s.a) wt *= 1.5;
+    return wt;
+  });
+  let r = rand() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < group.length; i++) { r -= weights[i]; if (r <= 0) return group[i]; }
+  return group[group.length - 1];
+}
+// 題型：只考「認得單字」—— 看英文選中文、看中文選英文
+function buildQuestion(word, forceType) {
+  const dir = forceType || (rand() < 0.5 ? "en2zh" : "zh2en");
+  const show = (w) => dir === "en2zh" ? w.zh : w.en;
+  const correctShow = norm(show(word));
+  const seenShow = new Set([correctShow]);
+  const cands = [];
+  for (const o of shuffle(VOCAB.slice())) {
+    if (o.key === word.key || norm(o.zh) === norm(word.zh) || norm(o.en) === norm(word.en)) continue;
+    const sh = norm(show(o)); if (seenShow.has(sh)) continue;
+    seenShow.add(sh);
+    const pref = (o.unit === word.unit ? 2 : 0) + (o.pos === word.pos ? 1 : 0);
+    cands.push({ o, pref });
+  }
+  // 熟悉度高：選同單元同詞性的干擾項（較難）；熟悉度低：隨機（較容易分辨）
+  if (wordStat(word.key).m >= 3) cands.sort((a, b) => b.pref - a.pref);
+  const distract = cands.slice(0, 3).map((c) => c.o);
+  if (distract.length < 1) return null;   // 少於 2 個選項，不出題
+  const options = shuffle([word, ...distract]);
+  return { word, type: dir, prompt: dir === "en2zh" ? word.en : word.zh, options: options.map((o) => ({ key: o.key, text: show(o) })) };
+}
+const CTX_LABEL = { harvest: "收成挑戰", gather: "採集挑戰", chest: "寶箱挑戰", npc: "村民的問題", shop: "顧客的問題", tutorial: "第一個挑戰", craft: "製作挑戰", practice: "單字練習" };
+const TYPE_HINT = { en2zh: "這個英文是什麼意思？", zh2en: "這個中文的英文是什麼？" };
+// cb(result)：'correct' | 'wrong' | 'none'（沒有出題）
+function askQuestion(context, opts, cb) {
+  const force = opts && opts.force;
+  if (!force && Date.now() - lastQuestionAt < QUESTION_COOLDOWN_MS) return cb("none");
+  const word = pickWord();
+  const q = word && buildQuestion(word);
+  if (!q) return cb("none");
+  lastQuestionAt = Date.now();
+  const tag = `${CTX_LABEL[context] || "英文挑戰"}${opts && opts.label ? `・${opts.label}` : ""}`;
+  const streak = S.streak >= 2 ? ` <span class="q-tag" style="background:#ff9a6a">連續答對 ${S.streak} 題</span>` : "";
+  const html = `<span class="q-tag">${esc(tag)}</span>${streak}<div class="q-prompt">${esc(q.prompt)}</div>
+    <div class="q-sub">${TYPE_HINT[q.type]} ${q.type === "en2zh" ? `<button class="speak" data-act="say">聽發音</button>` : ""}</div>
+    <div class="q-opts">${q.options.map((o, i) => `<button class="q-opt" data-act="o${i}">${esc(o.text)}</button>`).join("")}</div>
+    <div class="q-feedback" id="q-fb"></div>`;
+  const handlers = { say: () => speak(q.word.en, true) };
+  q.options.forEach((o, i) => {
+    handlers["o" + i] = () => {
+      const ok = o.key === q.word.key;
+      recordAnswer(q, ok, context);
+      document.querySelectorAll(".q-opt").forEach((b, k) => { b.disabled = true; if (q.options[k].key === q.word.key) b.classList.add("right"); else if (k === i) b.classList.add("wrong"); });
+      $("q-fb").innerHTML = ok ? `<span style="color:var(--good)">答對了！${esc(q.word.en)} ＝ ${esc(q.word.zh)}</span>` : `<span style="color:var(--bad)">正確答案：${esc(q.word.en)} ＝ ${esc(q.word.zh)}</span>`;
+      Sound.sfx(ok ? "right" : "wrong");
+      speak(q.word.en);
+      setTimeout(() => { closeModal(); cb(ok ? "correct" : "wrong"); }, ok ? 1200 : 2400);
+    };
+  });
+  openModal(html, handlers);
+  if (q.type === "en2zh") speak(q.word.en);   // 只有在設定中開啟「自動唸出英文」時才會唸
+}
+function recordAnswer(q, ok, context) {
+  const s = wordStat(q.word.key);
+  s.a++; ok ? s.c++ : s.w++;
+  if (s.first === null) s.first = ok;
+  s.recent = ((s.recent << 1) | (ok ? 1 : 0)) & 1023; s.rc = Math.min(10, s.rc + 1);
+  s.m = ok ? Math.min(5, s.m + 1) : Math.max(0, s.m - 2);
+  s.last = Date.now();
+  S.recentQ = [q.word.key, ...S.recentQ.filter((k) => k !== q.word.key)].slice(0, 3);
+  S.log.push({ t: Date.now(), k: q.word.key, d: q.type, ok, c: context });
+  if (S.log.length > 400) S.log.splice(0, S.log.length - 400);
+  if (ok) {
+    questEvent("correct");
+    S.streak++;
+    if (S.streak % 3 === 0) { const b = Math.min(10, S.streak); S.coins += b; setTimeout(() => toast(`連續答對 ${S.streak} 題！獎勵 ${b} 金`, "gold"), 300); }
+  } else S.streak = 0;
+  writeSave();
+}
+
+/* ---------------- 任務 ---------------- */
+function ensureDaily() {
+  const d = gameDay();
+  if (S.daily && S.daily.day === d) return;
+  const r = seeded(d * 97 + Number(S.seat) * 13 + 5);
+  const pool = DAILY_POOL.filter((q) => !q.needStep || S.main.step >= q.needStep); const chosen = [];
+  while (chosen.length < 3 && pool.length) { const i = Math.floor(r() * pool.length); const q = pool.splice(i, 1)[0]; if (!chosen.some((c) => c.ev === q.ev)) chosen.push(q); }
+  S.daily = { day: d, list: chosen.map((q) => ({ id: q.id, p: 0, claimed: false })) };
+  // 雜貨婆婆的英文訂單（每天一張）
+  const avail = ["wood", "berry", "flower", "herb", "fish", "carrot", "tomato", "strawberry"];
+  if (S.main.step >= 6) avail.push("jam", "bouquet");
+  if (S.flags.bridge) avail.push("mushroom", "honey", "soup", "potion");
+  if (S.flags.beach) avail.push("shell", "coconut");
+  const item = avail[Math.floor(r() * avail.length)];
+  const n = ITEMS[item].crafted ? 1 + Math.floor(r() * 2) : 2 + Math.floor(r() * 3);
+  S.order = { day: d, item, n, done: false };
+  S.talkedToday = []; S.counters = { day: d, sales: 0 };
+  markDirty();
+}
+function questEvent(ev, item, n = 1) {
+  if (!S.daily) return;
+  for (const dq of S.daily.list) {
+    const def = DAILY_POOL.find((x) => x.id === dq.id);
+    if (!def || def.ev !== ev || (def.item && def.item !== item) || dq.p >= def.n) continue;
+    dq.p = Math.min(def.n, dq.p + n);
+    if (dq.p >= def.n) toast(`每日任務完成：${def.text}（到任務領獎）`, "gold");
+  }
+  markDirty();
+}
+function giveReward(rw) {
+  if (rw.coins) S.coins += rw.coins;
+  if (rw.items) for (const [k, n] of Object.entries(rw.items)) addItem(k, n);
+  Sound.sfx("coin"); markDirty();
+}
+function advanceMain(to) {
+  if (S.main.step >= to) return;
+  S.main.step = to; markDirty(); writeSave();
+  if (to < MAIN.length) toast(`新目標：${MAIN[to]}`, "gold");
+}
+
+/* ---------------- 互動 ---------------- */
+const NPC_IDLE = {
+  mayor: ["今天天氣真好，適合冒險！", "商店經營得怎麼樣啦？", "多練習英文，村子裡的人都會更喜歡你的商店喔。"],
+  craft: ["好工具讓工作事半功倍！", "需要升級什麼嗎？", "森林裡的木材品質很好。"],
+  granny: ["年輕人，今天的任務完成了嗎？", "莓果做成果醬最好吃了。", "記得早點回家休息喔。"],
+  fox: ["嗚嗚～（小狐狸搖搖尾巴）", "森林深處有好多蜂蜜喔！"],
+  wheel: ["騎車跑得快，送貨更方便！", "Bike 就是腳踏車，Horse 是馬喔！", "存夠錢就來買一台吧！"],
+  fisherman: ["海風好舒服啊～", "Shell 就是貝殼，Coconut 是椰子。", "聽到警報要趕快回村子喔！"],
+};
+function interact(e) {
+  if (!e || action) return;
+  Sound.init();
+  switch (e.type) {
+    case "npc": return talkNpc(e);
+    case "node": return e.kind === "chest" ? openChest(e) : gather(e);
+    case "shelf": return openShelf(e.slot);
+    case "counter": return talk("收銀台", shopOpen() ? `商店營業中（07:00～21:00）。\n今天已賣出 ${S.counters.sales} 件商品。` : "商店打烊了，明天 07:00 開門。");
+    case "bed": case "clock": return restMenu();
+    case "board": return openBoard();
+    case "bench": return openBench();
+    case "dock": return goFishing();
+    case "plot": return farmAction(e.idx);
+    case "sign": return toast(e.text);
+    case "lost": return pickLost(e);
+    case "stall": return openSeedShop();
+    case "bikes": return openVehicles();
+    case "animal": return attackAnimal(e.a);
+  }
+}
+function markTalk(id) { if (!S.talkedToday.includes(id)) { S.talkedToday.push(id); questEvent("talk"); } }
+function runQuiz(e) {
+  const d = gameDay();
+  askQuestion("npc", { force: true }, (res) => {
+    S.npcQuizDay[e.id] = d;
+    if (res === "correct") { giveReward({ coins: 8 }); toast("答對了！獲得 8 金", "good"); }
+    else if (res === "wrong") { giveReward({ coins: 2 }); toast("沒關係，下次會更好！獲得 2 金"); }
+    writeSave();
+  });
+}
+function npcQuiz(e, name) {
+  if (S.npcQuizDay[e.id] === gameDay()) return false;
+  talk(name, "要不要挑戰我的英文問題？答對有獎勵喔！", [{ label: "挑戰！", fn: () => runQuiz(e) }, { label: "下次吧", alt: true }]);
+  return true;
+}
+function talkNpc(e) {
+  markTalk(e.id);
+  const st = S.main.step;
+  if (e.walker) {
+    e.wait = 6; e.goal = null; e.moving = false;
+    const quiz = S.npcQuizDay[e.id] !== gameDay() ? [{ label: "英文挑戰（答對 8 金）", fn: () => runQuiz(e) }] : [];
+    return talk(e.name, pick(e.lines), [...quiz, { label: "再見", alt: true }]);
+  }
+  if (e.id === "fisher") return talk("釣魚爺爺", ["呵呵，來釣魚嗎？", "站到池塘邊的木頭碼頭上，按「釣魚」。\n魚上鉤時，等白色指針跑進綠色區域再按「拉！」。", "大魚的綠色區域比較小，但是可以賣比較多錢喔！"], [{ label: "英文挑戰", fn: () => { if (!npcQuiz(e, "釣魚爺爺")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "好", alt: true }]);
+  if (e.id === "mayor") {
+    if (st === 0) return talk("村長", [
+      `歡迎來到我們的村子，${S.seat} 號小老闆！`,
+      "村口那間破舊的商店，從今天起就交給你經營了。",
+      "先到東邊的森林砍些木材吧！在森林裡會遇到英文挑戰，答對可以拿到更多材料。",
+    ], null, () => advanceMain(1));
+    if (st === 4) return talk("村長", ["你賣出第一件商品了！做得好！", "這是開店的賀禮：50 金。另外，村子左下角的農田也交給你了，先送你 3 包胡蘿蔔種子。", "種子用完可以跟雜貨婆婆買。不過商店有點破舊……收集 15 個木材給我，我幫你修好它。"], null, () => { giveReward({ coins: 50 }); advanceMain(5); });
+    if (st === 5) {
+      if ((S.inv.wood || 0) >= 15) return talk("村長", "15 個木材都帶來了！要交給我修復商店嗎？", [
+        { label: "交出 15 個木材", fn: () => { takeItems({ wood: 15 }); S.flags.repaired = true; Sound.sfx("up"); toast("商店修好了！顧客會變多喔", "gold"); advanceMain(6); writeSave(); } },
+        { label: "等一下", alt: true }]);
+      return talk("村長", `修復商店需要 15 個木材，你現在有 ${S.inv.wood || 0} 個。`);
+    }
+    if (st === 10) {
+      if (S.coins >= 300) return talk("村長", ["村子右下角有一條通往海邊的路，可是被柵欄擋住了。", "只要 300 金，我就請人把路修好。要開通嗎？"], [
+        { label: "付 300 金開通", fn: () => { S.coins -= 300; S.flags.beach = true; applyFlags(); Sound.sfx("up"); toast("通往海邊的路開通了！在村子右下角", "gold"); advanceMain(11); writeSave(); } },
+        { label: "等一下", alt: true }]);
+      return talk("村長", ["你真是越來越厲害了！", "村子右下角有一條通往海邊的路，可是被柵欄擋住了。", `存到 300 金來找我，我就幫你開通。（你現在有 ${S.coins} 金）`]);
+    }
+    if (st === 15) return talk("村長", ["你把動物都趕走了，村子安全了！真是太感謝你了！", "這是全村送你的謝禮：100 金！", "對了，漁夫阿海一直很照顧大家。做一條貝殼項鍊送他吧！工作台就能做。"], null, () => { giveReward({ coins: 100 }); advanceMain(16); });
+    if (npcQuiz(e, "村長")) return;
+    return talk("村長", pick(NPC_IDLE.mayor));
+  }
+  if (e.id === "craft") {
+    if (st === 8) {
+      if (has({ wood: 25, herb: 8 })) return talk("工匠阿木", "材料都齊了！我這就去修森林的橋。", [
+        { label: "交出材料修橋", fn: () => { takeItems({ wood: 25, herb: 8 }); S.flags.bridge = true; applyFlags(); Sound.sfx("up"); toast("森林的橋修好了！可以前往森林深處", "gold"); advanceMain(9); writeSave(); } },
+        { label: "先升級工具", fn: openUpgrades }, { label: "等一下", alt: true }]);
+      return talk("工匠阿木", `修橋需要 25 個木材和 8 個草藥。\n你現在有木材 ${S.inv.wood || 0}、草藥 ${S.inv.herb || 0}。`, [{ label: "看看升級", fn: openUpgrades }, { label: "好", alt: true }]);
+    }
+    if (st === 13) return talk("工匠阿木", "要保護村子？那你需要一把武器！", [{ label: "買武器", fn: openWeapons }, { label: "等一下", alt: true }]);
+    return talk("工匠阿木", pick(NPC_IDLE.craft), [{ label: "我要升級", fn: openUpgrades }, { label: "買武器", fn: openWeapons }, { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "工匠阿木")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
+  }
+  if (e.id === "granny") {
+    return talk("雜貨婆婆", S.order && !S.order.done ? "我今天有一張英文訂單，你看得懂嗎？" : pick(NPC_IDLE.granny), [
+      { label: "看英文訂單", fn: showOrder }, { label: `逛逛${SEED_SHOP}`, fn: openSeedShop }, { label: "每日任務", fn: openQuests },
+      { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "雜貨婆婆")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
+  }
+  if (e.id === "wheel") return talk("車行阿輪", st >= 5 ? pick(NPC_IDLE.wheel) : "歡迎光臨阿輪車行！等你賺到錢再來看看吧！", [{ label: "看交通工具", fn: openVehicles }, { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "車行阿輪")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
+  if (e.id === "fisherman") {
+    if (st === 12) return talk("漁夫阿海", ["喔！你就是村子裡開商店的小老闆吧？", "跟你說，最近野豬、浣熊和烏鴉常常跑進村子，偷吃田裡的作物……", "聽到警報的時候，要趕快回村子把牠們趕走！", "你先到工匠阿木那裡買一把武器吧。小刀只要 80 金。"], null, () => advanceMain(13));
+    if (st === 16) {
+      if ((S.inv.necklace || 0) >= 1) return talk("漁夫阿海", "這……這是送我的貝殼項鍊嗎？", [
+        { label: "送給阿海", fn: () => { addItem("necklace", -1); talk("漁夫阿海", ["好漂亮！謝謝你！", "這是我的謝禮：150 金。以後也請多多指教啦，小老闆！"], null, () => { giveReward({ coins: 150 }); Sound.sfx("up"); advanceMain(17); toast("主線全部完成！你是最棒的商店老闆！", "gold"); }); } },
+        { label: "等一下", alt: true }]);
+      return talk("漁夫阿海", "嗯？你在做什麼東西嗎？（貝殼項鍊：3 個貝殼＋1 朵野花，在商店的工作台做）");
+    }
+    if (npcQuiz(e, "漁夫阿海")) return;
+    return talk("漁夫阿海", pick(NPC_IDLE.fisherman));
+  }
+  if (e.id === "fox") {
+    if (st === 7 && !S.main.foxStarted) return talk("小狐狸", ["嗚嗚……我把 3 個寶物弄丟在森林裡了。", "地上會閃閃發光的就是！可以幫我找回來嗎？"], null, () => { S.main.foxStarted = true; markDirty(); toast("在森林裡找 3 個閃閃發光的寶物", "gold"); });
+    if (st === 7 && S.main.found.every(Boolean)) return talk("小狐狸", ["全部找到了！謝謝你！", "這些給你：40 金和 3 個草藥。", "聽說工匠可以修好河上的橋，對岸有好多蜂蜜喔！"], null, () => { giveReward({ coins: 40, items: { herb: 3 } }); advanceMain(8); });
+    if (st === 7) return talk("小狐狸", `還差 ${S.main.found.filter((f) => !f).length} 個寶物，拜託你了！`);
+    if (npcQuiz(e, "小狐狸")) return;
+    return talk("小狐狸", pick(NPC_IDLE.fox));
+  }
+}
+const orderSentence = (o) => `Please bring me ${NUM_EN[o.n] || o.n} ${PHRASE[o.item][o.n === 1 ? 0 : 1]}.`;
+const orderReward = (o) => Math.ceil(ITEMS[o.item].price * o.n * 1.5) + 5;
+function showOrder(hint = false) {
+  ensureDaily();
+  const o = S.order;
+  if (o.done) return talk("雜貨婆婆", "今天的訂單已經完成了，謝謝你！明天再來看看喔。");
+  const enough = (S.inv[o.item] || 0) >= o.n;
+  openModal(`${closeBtn}<span class="speaker">雜貨婆婆的英文訂單</span>
+    <div class="q-prompt" style="font-size:30px">${esc(orderSentence(o))}</div>
+    <div class="q-sub"><button class="speak" data-act="say">聽發音</button> <button class="speak" data-act="hint">${hint ? "隱藏提示" : "看中文提示"}</button></div>
+    ${hint ? `<p class="say" style="text-align:center">請帶給我 ${o.n} 個${ITEMS[o.item].zh}。</p>` : ""}
+    <p style="text-align:center">報酬：<b>${orderReward(o)} 金</b>　你有：${ITEMS[o.item].zh} ${S.inv[o.item] || 0} 個</p>
+    <div class="btn-row"><button class="btn" data-act="give" ${enough ? "" : "disabled"}>${enough ? "交貨" : "東西還不夠"}</button></div>`, {
+    __closable: true,
+    say: () => speak(orderSentence(o), true),
+    hint: () => showOrder(!hint),
+    give: () => {
+      if ((S.inv[o.item] || 0) < o.n) return;
+      addItem(o.item, -o.n); o.done = true; const rw = orderReward(o); S.coins += rw;
+      Sound.sfx("coin"); questEvent("order"); writeSave(); closeModal();
+      talk("雜貨婆婆", `Thank you! 謝謝你！這是 ${rw} 金。`);
+    },
+  });
+}
+function pickLost(e) {
+  if (S.main.step !== 7 || !S.main.foxStarted || S.main.found[e.idx]) return;
+  S.main.found[e.idx] = true; Sound.sfx("chest");
+  const n = S.main.found.filter(Boolean).length;
+  toast(`找到小狐狸的寶物！（${n}/3）`, "gold"); writeSave();
+}
+function practiceLeft() { if (S.practice.day !== gameDay()) S.practice = { day: gameDay(), count: 0 }; return PRACTICE_PER_DAY - S.practice.count; }
+function openBoard() {
+  const left = practiceLeft();
+  talk("任務板", "村子的任務板。要做什麼呢？", [
+    { label: "看任務", fn: openQuests },
+    { label: left > 0 ? `單字練習 5 題（今天還能練 ${left} 次）` : "單字練習（今天已練完）", fn: startPractice },
+    { label: "離開", alt: true }]);
+}
+function startPractice() {
+  if (practiceLeft() <= 0) return toast("今天的練習次數用完了，明天再來！");
+  S.practice.count++;
+  let i = 0, right = 0;
+  const next = () => {
+    if (i >= 5) {
+      const c = right * 3; S.coins += c; if (c) Sound.sfx("coin"); writeSave();
+      return talk("任務板", `練習結束！答對 ${right} / 5 題，獲得 ${c} 金。${right === 5 ? "\n全部答對，太厲害了！" : ""}`);
+    }
+    i++;
+    askQuestion("practice", { force: true, label: `第 ${i}/5 題` }, (res) => { if (res === "correct") right++; next(); });
+  };
+  next();
+}
+function openBench() {
+  if (S.main.step < 6) return talk("工作台", "工作台壞掉了……修好商店之後，就能把材料做成更值錢的商品。");
+  const rows = RECIPES.map((r, i) => {
+    const it = ITEMS[r.out];
+    return `<div class="row"><img src="${icon(r.out)}" alt=""><div class="grow"><div class="t">${it.zh} <span class="muted">${it.en}</span></div>
+      <div class="d">需要：${itemList(r.need)}・售價 ${it.price} 金・你有 ${S.inv[r.out] || 0} 個</div></div>
+      <button class="btn small" data-act="mk${i}" ${has(r.need) ? "" : "disabled"}>製作</button></div>`;
+  }).join("");
+  const h = { __closable: true };
+  RECIPES.forEach((r, i) => {
+    h["mk" + i] = () => {
+      if (!has(r.need)) return;
+      takeItems(r.need);
+      askQuestion("craft", {}, (res) => {
+        const n = res === "correct" && rand() < 0.3 ? 2 : 1;
+        addItem(r.out, n); Sound.sfx("up");
+        toast(`製作完成：${ITEMS[r.out].zh} ×${n}${n > 1 ? "（答對加成）" : ""}`, "gold");
+        popAt(13 * T + 8, 6 * T, r.out, `+${n}`);
+        questEvent("craft"); writeSave(); openBench();
+      });
+    };
+  });
+  openModal(`${closeBtn}<h2>工作台</h2><p class="muted">把材料做成商品，賣得比材料更貴！</p><div class="list">${rows}</div>`, h);
+}
+/* ---- 釣魚小遊戲 ---- */
+function goFishing() {
+  if (S.fishDay.day !== gameDay()) S.fishDay = { day: gameDay(), n: 0 };
+  if (S.fishDay.n >= 12) return toast("今天池塘的魚都很累了，明天再來！");
+  if (invCount() >= capacity()) return toast("背包滿了！", "bad");
+  player.dir = "left";
+  const big = rand() < 0.28, zw = big ? 0.13 : 0.22, zone = 0.1 + rand() * (0.8 - zw), speed = big ? 1.5 : 1.0;
+  let phase = "wait", pos = 0, dirv = 1, raf = 0, lastT = 0, timers = [];
+  const stop = () => { cancelAnimationFrame(raf); timers.forEach(clearTimeout); phase = "done"; };
+  const msg = (t) => { const el = $("fish-msg"); if (el) el.textContent = t; };
+  openModal(`<h2>釣魚</h2><p class="say" id="fish-msg">拋竿……安靜等魚上鉤</p>
+    <div class="fishbar"><div class="zone" style="left:${zone * 100}%;width:${zw * 100}%"></div><div class="needle" id="needle" style="left:0%"></div></div>
+    <div class="btn-row"><button class="btn" data-act="pull" style="font-size:24px">拉！</button><button class="btn alt" data-act="close">收竿</button></div>`, {
+    __closable: true,
+    pull: () => {
+      if (phase === "wait") { stop(); Sound.sfx("splash"); msg("太早拉了，魚被嚇跑了……再試一次吧！"); setTimeout(closeModal, 1400); return; }
+      if (phase !== "bite") return;
+      stop();
+      if (pos >= zone && pos <= zone + zw) {
+        const item = big ? "bigfish" : "fish";
+        addItem(item, 1); S.fishDay.n++; questEvent("fish"); Sound.sfx("chest");
+        msg(`釣到了！${ITEMS[item].zh}（${ITEMS[item].en}）`);
+        setTimeout(() => { closeModal(); popAt(player.x - 12, player.y - 20, item, "+1"); burst(player.x - 16, player.y - 6, "#9fd0ff"); toast(`釣到${ITEMS[item].zh}！`, "good"); writeSave(); }, 1000);
+      } else { Sound.sfx("splash"); msg("差一點！魚溜走了。"); setTimeout(closeModal, 1300); }
+    },
+  }, stop);
+  Sound.sfx("splash");
+  timers.push(setTimeout(() => {
+    if (phase !== "wait") return;
+    phase = "bite"; Sound.sfx("coin"); msg(big ? "大魚上鉤了！指針在綠色區域時按「拉！」" : "魚上鉤了！指針在綠色區域時按「拉！」");
+    const tick = (t) => {
+      if (phase !== "bite") return;
+      const dt = lastT ? (t - lastT) / 1000 : 0; lastT = t;
+      pos += dirv * speed * dt; if (pos > 1) { pos = 1; dirv = -1; } if (pos < 0) { pos = 0; dirv = 1; }
+      const n = $("needle"); if (n) n.style.left = pos * 100 + "%";
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    timers.push(setTimeout(() => { if (phase === "bite") { stop(); msg("魚跑掉了……下次快一點！"); setTimeout(closeModal, 1300); } }, 4500));
+  }, 900 + rand() * 1600));
+}
+
+/* ---- 農田：播種 → 澆水 → 長大（中途要再澆一次）→ 收成 ---- */
+const emptyPlot = () => ({ c: null, g: 0, wet: false, dry: false });
+const plotUnlocked = (i) => i < upVal("farm");
+const plotEnt = (i) => scenes.village.ents.find((e) => e.id === "plot" + i);
+const cropReady = (p) => p.c && p.g >= CROPS[p.c].grow;
+const needsWater = (p) => p.c && !p.wet && !cropReady(p);
+const realMinutes = (gameMin) => Math.max(1, Math.round(gameMin / MIN_PER_SEC / 60));
+function growFarm(min) {
+  S.farm.forEach((p, i) => {
+    if (!p.c || !p.wet || !plotUnlocked(i)) return;
+    const grow = CROPS[p.c].grow;
+    if (p.g >= grow) return;
+    const next = p.g + min;
+    if (!p.dry && next >= grow / 2) { p.g = grow / 2; p.wet = false; p.dry = true; }   // 長到一半土乾了，要再澆一次
+    else p.g = Math.min(grow, next);
+  });
+}
+function farmAction(i) {
+  if (!plotUnlocked(i)) return toast("這塊地還不能用，找工匠「擴充田地」");
+  const p = S.farm[i];
+  if (!p.c) return openPlant(i);
+  if (cropReady(p)) return harvestPlot(i);
+  if (!p.wet) return waterPlot(i);
+  toast(`${ITEMS[p.c].zh}正在長大（${Math.floor((p.g / CROPS[p.c].grow) * 100)}%）`);
+}
+function waterPlot(i) {
+  const list = upVal("can") ? S.farm.map((p, k) => k).filter((k) => plotUnlocked(k) && needsWater(S.farm[k])) : [i];
+  for (const k of list) { S.farm[k].wet = true; const e = plotEnt(k); if (e) burst(e.tx * T + 8, e.ty * T + 8, "#7fc0ff"); }
+  Sound.sfx("splash");
+  toast(list.length > 1 ? `用大灑水壺澆了 ${list.length} 塊田！` : "澆水完成！作物開始長大", "good");
+  markDirty();
+}
+function openPlant(i) {
+  const owned = Object.keys(CROPS).filter((k) => (S.seeds[k] || 0) > 0);
+  if (!owned.length) return talk("農田", "沒有種子了。到廣場找雜貨婆婆買種子吧！");
+  const empty = S.farm.map((p, k) => k).filter((k) => plotUnlocked(k) && !S.farm[k].c);
+  const rows = owned.map((k) => `<div class="row"><img src="${icon(k)}" alt=""><div class="grow"><div class="t">${ITEMS[k].zh}種子 <span class="muted">${ITEMS[k].en}</span></div>
+    <div class="d">還有 ${S.seeds[k]} 包・約 ${realMinutes(CROPS[k].grow)} 分鐘長大・一個賣 ${ITEMS[k].price} 金</div></div>
+    <button class="btn small" data-act="one_${k}">種這塊</button>${empty.length > 1 ? `<button class="btn small alt" data-act="all_${k}">種滿空田</button>` : ""}</div>`).join("");
+  const plant = (k, plots) => {
+    let n = 0;
+    for (const idx of plots) { if (!(S.seeds[k] > 0) || S.farm[idx].c) continue; S.seeds[k]--; S.farm[idx] = { c: k, g: 0, wet: false, dry: false }; n++; const e = plotEnt(idx); if (e) burst(e.tx * T + 8, e.ty * T + 10, "#c9a06a"); }
+    closeModal(); Sound.sfx("pick"); toast(`種下 ${n} 株${ITEMS[k].zh}！記得澆水`, "good"); writeSave();
+  };
+  const h = { __closable: true };
+  for (const k of owned) { h["one_" + k] = () => plant(k, [i]); h["all_" + k] = () => plant(k, empty); }
+  openModal(`${closeBtn}<h2>要種什麼？</h2><div class="list">${rows}</div>`, h);
+}
+function harvestPlot(i) {
+  if (invCount() >= capacity()) return toast("背包滿了！先把東西上架或賣掉", "bad");
+  const p = S.farm[i], kind = p.c, e = plotEnt(i);
+  let n = randInt(...CROPS[kind].yield);
+  const finish = (res) => {
+    if (res === "correct") n++;
+    n = Math.min(n, capacity() - invCount());
+    addItem(kind, n); S.farm[i] = emptyPlot();
+    Sound.sfx("gather");
+    if (e) { popAt(e.tx * T + 8, e.ty * T, kind, `+${n}`); burst(e.tx * T + 8, e.ty * T + 8, "#7ac86a"); }
+    toast(`收成 ${ITEMS[kind].zh} ×${n}${res === "correct" ? "（答對多 1 個）" : ""}`, "good");
+    questEvent("harvest", kind, n); writeSave();
+  };
+  if (rand() < GATHER_QUESTION_CHANCE) askQuestion("harvest", {}, finish); else finish("none");
+}
+function openSeedShop() {
+  const list = Object.entries(CROPS);
+  const rows = list.map(([k, c]) => {
+    const locked = c.needBridge && !S.flags.bridge;
+    return `<div class="row"><img src="${icon(k)}" alt=""><div class="grow"><div class="t">${ITEMS[k].zh}種子 <span class="muted">${ITEMS[k].en}</span></div>
+      <div class="d">${locked ? "修好森林的橋以後才買得到" : `一包 ${c.seed} 金・約 ${realMinutes(c.grow)} 分鐘長大・一個賣 ${ITEMS[k].price} 金・你有 ${S.seeds[k] || 0} 包`}</div></div>
+      ${locked ? "" : `<button class="btn small" data-act="b1_${k}" ${S.coins >= c.seed ? "" : "disabled"}>買 1</button><button class="btn small" data-act="b5_${k}" ${S.coins >= c.seed * 5 ? "" : "disabled"}>買 5</button>`}</div>`;
+  }).join("");
+  const h = { __closable: true };
+  for (const [k, c] of list) for (const n of [1, 5]) h[`b${n}_${k}`] = () => {
+    if (S.coins < c.seed * n) return;
+    S.coins -= c.seed * n; S.seeds[k] = (S.seeds[k] || 0) + n; Sound.sfx("coin"); writeSave(); openSeedShop();
+  };
+  openModal(`${closeBtn}<h2>${SEED_SHOP}</h2><p class="muted">雜貨婆婆開的種子店。你有 ${S.coins} 金。種子不佔背包空間。農田在村子左下角。</p><div class="list">${rows}</div>`, h);
+}
+
+/* ---- 採集動作（揮斧頭、搖晃、碎屑） ---- */
+let action = null, shakeT = 0;
+function startAction(e, done) {
+  const c = entCenter(e), dx = c.x - player.x, dy = c.y - (player.y - 6);
+  player.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+  const tree = e.kind === "tree" || e.kind === "hive" || e.kind === "palm", k = upVal("skill");
+  action = { e, t: 0, dur: (tree ? 0.95 : 0.6) * k, step: (tree ? 0.32 : 0.2) * k, next: 0.12 * k, tree, done };
+}
+function updateAction(dt) {
+  if (!action) return false;
+  const a = action; a.t += dt;
+  if (a.t >= a.next) {
+    a.next += a.step;
+    const c = entCenter(a.e);
+    a.e.shake = 0.18;
+    if (a.tree) { Sound.sfx("chop"); burst(c.x, c.y + 2, "#c9a06a"); burst(c.x, c.y - 8, "#58a85e"); shakeT = 0.08; }
+    else { Sound.sfx("pick"); burst(c.x, c.y, a.e.kind === "bush" ? "#d23c5a" : "#7ac86a"); }
+  }
+  for (const e of scene.ents) if (e.shake > 0) e.shake -= dt;
+  if (a.t >= a.dur) { action = null; a.done(); }
+  return true;
+}
+function gather(e) {
+  const def = NODE_KINDS[e.kind];
+  if (action) return;
+  if (!nodeReady(e)) { const h = Math.ceil((S.nodes[e.id] - S.min) / 60); return toast(`還沒長好，大約 ${h} 小時後再來`); }
+  if (invCount() >= capacity()) return toast("背包滿了！回商店上架，或找工匠升級背包", "bad");
+  startAction(e, () => doGather(e));
+}
+function doGather(e) {
+  const def = NODE_KINDS[e.kind];
+  let qty = randInt(def.min, def.max) + upVal("tool");
+  const finish = (res) => {
+    if (res === "correct" && rand() < 0.25) qty++;
+    if (res === "wrong") qty = Math.max(1, qty - 1);
+    qty = Math.min(qty, capacity() - invCount());
+    addItem(def.item, qty);
+    S.nodes[e.id] = S.min + def.cd;
+    Sound.sfx("gather");
+    const ec = entCenter(e); popAt(ec.x, e.ty * T, def.item, `+${qty}`); burst(ec.x, ec.y, e.kind === "tree" ? "#6bbf5a" : e.kind === "bush" ? "#d23c5a" : "#f7e26b");
+    toast(`+${qty} ${ITEMS[def.item].zh}${res === "correct" ? "（答對加成）" : ""}`, "good");
+    questEvent("gather", def.item, qty);
+    if (S.main.step === 1 && def.item === "wood") advanceMain(2);
+    if (S.main.step === 11 && def.item === "shell" && (S.inv.shell || 0) >= 5) { advanceMain(12); toast("貝殼收集好了！去找漁夫阿海", "gold"); }
+    if (S.main.step === 9 && def.item === "honey") { advanceMain(10); talk("村長的信", "聽說你拿到森林深處的蜂蜜了！你已經是村子裡最棒的商店老闆。這是獎勵：100 金！", null, () => giveReward({ coins: 100 })); }
+    writeSave();
+  };
+  const force = S.main.step === 1 && e.kind === "tree";
+  if (force || rand() < GATHER_QUESTION_CHANCE) askQuestion(force ? "tutorial" : "gather", { force }, finish); else finish("none");
+}
+function openChest(e) {
+  if (!nodeReady(e)) return toast("寶箱是空的，明天再來看看");
+  askQuestion("chest", { force: true }, (res) => {
+    const good = res !== "wrong";
+    const coins = good ? randInt(15, 25) : randInt(5, 10);
+    const item = pick(e.loot || (e.tx >= 38 ? ["honey", "mushroom"] : ["berry", "herb", "flower"]));
+    const n = good ? 2 : 1;
+    S.coins += coins; S.nodes[e.id] = S.min + NODE_KINDS.chest.cd;
+    const room = capacity() - invCount();
+    if (room > 0) addItem(item, Math.min(n, room));
+    Sound.sfx("chest");
+    toast(`寶箱：${coins} 金${room > 0 ? ` + ${ITEMS[item].zh}×${Math.min(n, room)}` : "（背包滿了）"}`, "gold");
+    questEvent("chest"); markDirty(); writeSave();
+  });
+}
+/* ---- 休息／睡覺：跳過時間（作物照樣長大、商店照樣營業） ---- */
+function restMenu() {
+  const m = minOfDay(), day0 = gameDay() * DAY, choices = [];
+  const fmt = (min) => `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:00`;
+  for (const target of [12 * 60, 18 * 60, 21 * 60]) if (m < target - 30) choices.push({ label: `休息到 ${fmt(target)}${target === 12 * 60 ? "（中午）" : target === 18 * 60 ? "（傍晚）" : "（晚上）"}`, fn: () => skipTo(day0 + target) });
+  if (m >= 18 * 60 || m < 5 * 60) choices.push({ label: "睡到明天早上 06:00", fn: () => skipTo((m < 5 * 60 ? day0 : day0 + DAY) + 6 * 60) });
+  choices.push({ label: "不用了", alt: true });
+  talk("時鐘", `現在是 ${timeLabel()}。\n要休息一下嗎？休息時農作物會繼續長大，商店也會繼續營業。`, choices);
+}
+function skipTo(target) {
+  fade(() => {
+    const before = S.min;
+    if (target <= before) return;
+    // 分段推進：讓作物生長、顧客上門都照時間發生
+    let sold = 0, earned = 0;
+    for (let t = before; t < target; t = Math.min(target, t + 10)) {
+      const step = Math.min(10, target - t);
+      S.min = t + step; growFarm(step);
+      if (gameDay() !== S.counters.day) ensureDaily();
+      if (shopOpen() && S.min >= S.nextCustomer) {
+        S.nextCustomer = S.min + randInt(35, 60) * (S.flags.repaired ? 0.85 : 1) * (1 - 0.06 * upVal("decor"));
+        const stocked = stockedSlots();
+        if (S.counters.sales < MAX_SALES_PER_DAY && stocked.length) { const i = pick(stocked); if (willBuy(i)) { const c0 = S.coins; sell(i, false, 1, true); sold++; earned += S.coins - c0; } }
+      }
+    }
+    S.min = target; ensureDaily(); writeSave();
+    toast(`時間來到 ${timeLabel()}`, "gold");
+    if (sold) setTimeout(() => toast(`休息時商店賣出 ${sold} 件商品，+${earned} 金`, "gold"), 400);
+  });
+}
+
+/* ---------------- 商店：貨架、顧客 ---------------- */
+const slotUnlocked = (i) => i < upVal("shelfSlots");
+const buyChance = (price, base) => clamp(0.9 - 0.5 * (price / base - 0.5), 0.05, 0.95);
+function priceMood(price, base) { const r = price / base; return r <= 0.8 ? ["便宜", "var(--good)"] : r <= 1.3 ? ["合理", "var(--ink)"] : ["偏貴", "var(--bad)"]; }
+function openShelf(i, stage = null) {
+  if (!slotUnlocked(i)) return toast("這格貨架還不能用，找工匠升級「貨架格數」");
+  const sl = S.shelves[i], cap = upVal("shelfCap");
+  const parts = [`${closeBtn}<h2>貨架 ${i + 1}</h2>`];
+  const priceBox = (price, base) => { const [mood, col] = priceMood(price, base); return `<h3>售價</h3><div class="price-ctl"><button class="btn small" data-act="pdown">－</button>
+      <div class="price-val">${price} 金<br><small style="color:${col}">${mood}・約 ${Math.round(buyChance(price, base) * 100)}% 會買</small></div>
+      <button class="btn small" data-act="pup">＋</button></div>`; };
+  const nextPrice = (price, base, d) => clamp(Math.round(price + d * Math.max(1, Math.round(base * 0.1))), Math.ceil(base * 0.5), base * 2);
+  const h = { __closable: true };
+  if (stage) {
+    // 第二步：選數量、定價，按「上架！」
+    const it = ITEMS[stage.item], maxN = Math.min(cap, S.inv[stage.item] || 0);
+    parts.push(`<div class="row"><img src="${icon(stage.item)}" alt=""><div class="grow"><div class="t">${it.zh} <span class="muted">${it.en}</span></div><div class="d">背包裡有 ${S.inv[stage.item] || 0} 個・原價 ${it.price} 金</div></div></div>
+      <h3>數量</h3><div class="price-ctl"><button class="btn small" data-act="ndown" ${stage.n <= 1 ? "disabled" : ""}>－</button>
+      <div class="price-val">${stage.n} 個<br><small>這格最多放 ${cap} 個</small></div>
+      <button class="btn small" data-act="nup" ${stage.n >= maxN ? "disabled" : ""}>＋</button></div>
+      ${priceBox(stage.price, it.price)}
+      <div class="btn-row" style="margin-top:14px"><button class="btn alt" data-act="cancel">換別的</button><button class="btn" data-act="confirm">上架！</button></div>`);
+    Object.assign(h, {
+      ndown: () => openShelf(i, { ...stage, n: Math.max(1, stage.n - 1) }),
+      nup: () => openShelf(i, { ...stage, n: Math.min(maxN, stage.n + 1) }),
+      pdown: () => openShelf(i, { ...stage, price: nextPrice(stage.price, it.price, -1) }),
+      pup: () => openShelf(i, { ...stage, price: nextPrice(stage.price, it.price, 1) }),
+      cancel: () => openShelf(i),
+      confirm: () => {
+        const n = Math.min(stage.n, S.inv[stage.item] || 0, cap); if (n <= 0) return;
+        sl.item = stage.item; sl.lastItem = stage.item; sl.qty = n; sl.price = stage.price; addItem(stage.item, -n);
+        closeModal(); toast(`上架完成：${it.zh} ×${n}，一個 ${stage.price} 金`, "good"); afterStock(); writeSave();
+      },
+    });
+  } else if (sl.item && sl.qty > 0) {
+    const it = ITEMS[sl.item];
+    parts.push(`<div class="row"><img src="${icon(sl.item)}" alt=""><div class="grow"><div class="t">${it.zh} ×${sl.qty} <span class="muted">/ ${cap}</span></div><div class="d">原價 ${it.price} 金</div></div></div>
+      ${priceBox(sl.price, it.price)}
+      <div class="btn-row" style="margin-top:12px"><button class="btn alt" data-act="more" ${sl.qty >= cap || !(S.inv[sl.item] > 0) ? "disabled" : ""}>再放 1 個</button>
+      <button class="btn alt" data-act="fill" ${sl.qty >= cap || !(S.inv[sl.item] > 0) ? "disabled" : ""}>放滿</button>
+      <button class="btn alt" data-act="back">全部收回背包</button></div>
+      <div class="btn-row" style="margin-top:10px"><button class="btn" data-act="done">好了，回去賣東西</button></div>`);
+    const put = (n) => { const add = Math.min(n, cap - sl.qty, S.inv[sl.item] || 0); if (add <= 0) return; sl.qty += add; addItem(sl.item, -add); afterStock(); openShelf(i); };
+    Object.assign(h, {
+      pdown: () => { sl.price = nextPrice(sl.price, it.price, -1); markDirty(); openShelf(i); },
+      pup: () => { sl.price = nextPrice(sl.price, it.price, 1); markDirty(); openShelf(i); },
+      more: () => put(1), fill: () => put(cap),
+      back: () => { addItem(sl.item, sl.qty); sl.item = null; sl.qty = 0; markDirty(); openShelf(i); },
+      done: () => closeModal(),
+    });
+  } else {
+    const avail = Object.keys(ITEMS).filter((k) => S.inv[k] > 0);
+    parts.push(`<p>第 1 步：選擇要上架的商品（每格最多 ${cap} 個）</p>`);
+    parts.push(avail.length ? `<div class="grid-items">${avail.map((k) => `<button class="item-cell" data-act="put_${k}"><img src="${icon(k)}" alt="">${ITEMS[k].zh} ×${S.inv[k]}</button>`).join("")}</div>`
+      : `<p class="empty">背包裡沒有商品。先去森林採集吧！</p>`);
+    for (const k of avail) h["put_" + k] = () => openShelf(i, { item: k, n: Math.min(cap, S.inv[k]), price: sl.lastItem === k && sl.price ? sl.price : ITEMS[k].price });
+  }
+  openModal(parts.join(""), h, () => writeSave());
+}
+function afterStock() {
+  Sound.sfx("gather"); markDirty();
+  if (S.main.step === 2) { advanceMain(3); S.nextCustomer = S.min + 8; S.tutorialSale = true; }  // 教學：第一位顧客很快上門且一定會買
+}
+let customers = [];
+function stockedSlots() { return S.shelves.map((s, i) => i).filter((i) => slotUnlocked(i) && S.shelves[i].item && S.shelves[i].qty > 0); }
+function updateCustomers(dt) {
+  const tutorialRush = S.tutorialSale && S.main.step === 3;
+  if ((shopOpen() || tutorialRush) && S.min >= S.nextCustomer) {
+    const gap = randInt(35, 60) * (S.flags.repaired ? 0.85 : 1) * (1 - 0.06 * upVal("decor"));
+    S.nextCustomer = S.min + gap;
+    if (S.counters.sales < MAX_SALES_PER_DAY) spawnCustomer();
+  }
+  if (scene.name !== "shop") { customers = []; return; }
+  for (const c of customers) stepCustomer(c, dt);
+  customers = customers.filter((c) => !c.gone);
+}
+function willBuy(i) { const sl = S.shelves[i]; return S.tutorialSale && S.main.step === 3 ? true : rand() < buyChance(sl.price, ITEMS[sl.item].price); }
+function spawnCustomer() {
+  const stocked = stockedSlots();
+  if (scene.name !== "shop") {
+    if (!stocked.length) return;
+    const i = pick(stocked);
+    if (willBuy(i)) sell(i, false);
+    return;
+  }
+  const looks = [["#2b1d14", "#d04a4a"], ["#e0b040", "#4a7ad0"], ["#8a4a20", "#5aa05a"], ["#1a1a2a", "#e08a3a"], ["#c06a3a", "#8a5ac0"], ["#f0e0a0", "#3aa0a0"]];
+  const [hair, shirt] = pick(looks);
+  // 約 4 成顧客會指名想買某樣東西（從玩家擁有或上架過的商品中挑）
+  let wish = null;
+  if (S.main.step >= 4 && rand() < 0.4) {
+    const pool = [...new Set([...S.shelves.filter((s) => s.item).map((s) => s.item), ...Object.keys(S.inv).filter((k) => S.inv[k] > 0)])];
+    if (pool.length) wish = pick(pool);
+  }
+  const wishSlot = wish ? stocked.find((i) => S.shelves[i].item === wish) : undefined;
+  const slot = wish ? (wishSlot ?? null) : stocked.length ? pick(stocked) : null;
+  const target = slot !== null ? shelfStand(slot) : { x: 5 * T, y: 5.6 * T };
+  const path = [{ x: 8.5 * T, y: 9.8 * T }, { x: 8.5 * T, y: target.y }, target];
+  customers.push({ x: 7.5 * T, y: 10.9 * T, look: { hair, shirt }, dir: "up", path, phase: "in", slot, wait: 0, anim: 0, bubble: null, wish });
+  Sound.sfx("door");
+}
+function shelfStand(i) { const e = scenes.shop.ents.find((x) => x.id === "shelf" + i); return { x: e.tx * T + 8, y: (e.ty + 1) * T + 9 }; }
+function stepCustomer(c, dt) {
+  c.anim += dt;
+  if (c.wait > 0) { c.wait -= dt; if (c.wait <= 0) customerNext(c); return; }
+  const tgt = c.path[0]; if (!tgt) return customerNext(c);
+  const dx = tgt.x - c.x, dy = tgt.y - c.y, d = Math.hypot(dx, dy), sp = 42 * dt;
+  if (d <= sp) { c.x = tgt.x; c.y = tgt.y; c.path.shift(); if (!c.path.length) customerNext(c); return; }
+  c.x += (dx / d) * sp; c.y += (dy / d) * sp;
+  c.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+  c.moving = true;
+}
+function customerNext(c) {
+  c.moving = false;
+  if (c.phase === "in") { c.phase = "look"; c.dir = "up"; c.wait = 1.2; c.bubble = "..."; return; }
+  if (c.phase === "look") {
+    const has = c.slot !== null && S.shelves[c.slot].item && S.shelves[c.slot].qty > 0;
+    c.wishMet = Boolean(c.wish && has && S.shelves[c.slot].item === c.wish);
+    const ok = has && (c.wishMet || (!c.wish && willBuy(c.slot)));
+    if (ok) { c.phase = "pay"; c.bubble = c.wishMet ? "♥" : null; c.path = [{ x: 8.5 * T, y: c.y }, { x: 8.5 * T, y: 4.9 * T }, { x: 12.5 * T, y: 4.9 * T }]; }
+    else {
+      c.phase = "out"; c.bubble = "?"; c.path = [{ x: 8.5 * T, y: c.y }, { x: 8.5 * T, y: 9.8 * T }, { x: 7.5 * T, y: 11.2 * T }];
+      if (c.wish) toast(`顧客想買「${ITEMS[c.wish].zh}」，可惜貨架上沒有……`, "bad");
+    }
+    return;
+  }
+  if (c.phase === "pay") {
+    c.dir = "up";
+    if (c.slot !== null && S.shelves[c.slot].qty > 0) { sell(c.slot, true, c.wishMet ? 1.5 : 1); if (c.wishMet) questEvent("wish"); }
+    c.bubble = "♪"; c.phase = "out"; c.wait = 0.8;
+    c.path = [{ x: 8.5 * T, y: 4.9 * T }, { x: 8.5 * T, y: 9.8 * T }, { x: 7.5 * T, y: 11.2 * T }];
+    return;
+  }
+  if (c.phase === "out" && !c.path.length) c.gone = true;
+}
+let shopQuestionCounter = 0;
+function sell(i, present, mult = 1, quiet = false) {
+  const sl = S.shelves[i]; if (!sl.item || sl.qty <= 0) return;
+  const it = ITEMS[sl.item], price = Math.round(sl.price * mult);
+  sl.qty--; const name = it.zh; if (sl.qty === 0) sl.item = null;
+  S.coins += price; S.counters.sales++;
+  if (quiet) { questEvent("sell"); if (S.main.step === 3) { S.tutorialSale = false; advanceMain(4); } return; }
+  Sound.sfx("coin");
+  if (present) { popAt(12.5 * T, 3 * T - 4, "coin", `+${price}`); burst(12.5 * T, 3.5 * T, "#f2c230"); }
+  toast(`${present ? "" : "商店："}賣出 ${name} +${price} 金${mult > 1 ? "（指名商品，顧客多付錢！）" : ""}`, "gold");
+  questEvent("sell");
+  if (S.main.step === 3) { S.tutorialSale = false; advanceMain(4); }
+  writeSave();
+  if (present && ++shopQuestionCounter % 4 === 0 && !modalOpen()) {
+    askQuestion("shop", {}, (res) => { if (res === "correct") { const tip = Math.ceil(price * 0.5); S.coins += tip; Sound.sfx("coin"); toast(`顧客很開心，多給你 ${tip} 金小費！`, "gold"); writeSave(); } });
+  }
+}
+
+/* ---------------- 面板：背包、任務、單字本、設定、升級 ---------------- */
+function openBag() {
+  const keys = Object.keys(ITEMS).filter((k) => S.inv[k] > 0);
+  openModal(`${closeBtn}<h2>背包（${invCount()} / ${capacity()}）</h2>
+    <div class="row"><img src="${icon("coin")}" alt=""><div class="grow"><div class="t">${S.coins} 金</div></div></div><h3>物品</h3>
+    ${keys.length ? `<div class="grid-items">${keys.map((k) => `<div class="item-cell"><img src="${icon(k)}" alt=""><div>${ITEMS[k].zh} ×${S.inv[k]}<br><small class="muted">${ITEMS[k].en}・原價 ${ITEMS[k].price}</small></div></div>`).join("")}</div>` : `<p class="empty">背包是空的</p>`}
+    <h3>裝備</h3><div class="list"><div class="row">${S.weapon ? `<img src="${icon("w_" + S.weapon)}" alt="">` : ""}${S.ride ? `<img src="${icon("v_" + S.ride)}" alt="">` : ""}<div class="grow"><div class="t">武器：${S.weapon ? WEAPONS[S.weapon].name : "沒有"}</div><div class="d">交通工具：${S.ride ? VEHICLES[S.ride].name : S.vehicles.length ? "沒在騎" : "沒有"}</div></div>${S.vehicles.length ? `<button class="btn small" data-act="veh">換車</button>` : ""}</div></div>
+    <h3>升級狀態</h3><div class="list">${Object.entries(UPGRADES).map(([id, u]) => `<div class="row"><img src="${icon("up_" + id)}" alt=""><div class="grow"><div class="t">${u.name} Lv${S.up[id]}</div><div class="d">${u.unit(upVal(id))}</div></div></div>`).join("")}</div>`, { __closable: true, veh: openVehicles });
+}
+function openQuests() {
+  ensureDaily();
+  const daily = S.daily.list.map((dq, i) => {
+    const def = DAILY_POOL.find((x) => x.id === dq.id); const done = dq.p >= def.n;
+    const rw = costText(def.reward);
+    return `<div class="row"><div class="grow"><div class="t">${def.text}</div><div class="d">獎勵：${rw}</div><div class="bar"><i style="width:${(dq.p / def.n) * 100}%"></i></div></div>
+      ${dq.claimed ? `<span class="muted">已領取</span>` : `<button class="btn small" data-act="claim${i}" ${done ? "" : "disabled"}>${done ? "領取" : `${dq.p}/${def.n}`}</button>`}</div>`;
+  }).join("");
+  const h = { __closable: true };
+  S.daily.list.forEach((dq, i) => { h["claim" + i] = () => { const def = DAILY_POOL.find((x) => x.id === dq.id); if (dq.claimed || dq.p < def.n) return; dq.claimed = true; giveReward(def.reward); toast(`領取獎勵：${costText(def.reward)}`, "gold"); writeSave(); openQuests(); }; });
+  const o = S.order;
+  const orderRow = o ? `<div class="row"><img src="${icon(o.item)}" alt=""><div class="grow"><div class="t">${esc(orderSentence(o))}</div><div class="d">${o.done ? "已完成" : `找雜貨婆婆交貨・報酬 ${orderReward(o)} 金`}</div></div></div>` : "";
+  openModal(`${closeBtn}<h2>任務</h2><h3>主線</h3><div class="row"><div class="grow"><div class="t">${esc(objectiveText())}</div><div class="d">主線進度 ${Math.min(S.main.step, MAIN.length - 1)} / ${MAIN.length - 1}</div></div></div>
+    <h3>每日任務（第 ${gameDay() + 1} 天，06:00 更新）</h3><div class="list">${daily}</div>
+    <h3>婆婆的英文訂單</h3>${orderRow}`, h);
+}
+function stars(m) { return "★".repeat(m) + "☆".repeat(5 - m); }
+function openWords() {
+  const attempts = S.log.length, correct = S.log.filter((l) => l.ok).length;
+  const firsts = Object.values(S.stats).filter((s) => s.first !== null);
+  const firstRate = firsts.length ? Math.round((firsts.filter((s) => s.first).length / firsts.length) * 100) : 0;
+  const weak = VOCAB.filter((w) => wordStat(w.key).a >= 2).sort((a, b) => (wordStat(b.key).w / wordStat(b.key).a) - (wordStat(a.key).w / wordStat(a.key).a)).filter((w) => wordStat(w.key).w > 0).slice(0, 5);
+  const units = [...new Set(VOCAB.map((w) => w.unit))].sort((a, b) => CURRENT_UNITS.has(b) - CURRENT_UNITS.has(a));
+  const unitHtml = units.map((u) => `<h3>${esc(u)}${CURRENT_UNITS.has(u) ? "（本週）" : ""}</h3><div class="list">${VOCAB.filter((w) => w.unit === u).map((w) => {
+    const s = wordStat(w.key);
+    return `<div class="row"><div class="grow"><div class="t">${esc(w.en)} <span class="muted">${esc(w.zh)}</span></div><div class="d">練習 ${s.a} 次・答對 ${s.c}・答錯 ${s.w}</div></div><span class="stars">${stars(s.m)}</span><button class="speak" data-act="say_${esc(w.key)}">聽</button></div>`;
+  }).join("")}</div>`).join("");
+  const h = { __closable: true };
+  for (const w of VOCAB) h["say_" + w.key] = () => speak(w.en, true);
+  openModal(`${closeBtn}<h2>單字本</h2>
+    <div class="row"><div class="grow"><div class="t">座號 ${esc(S.seat)} 的學習紀錄</div>
+    <div class="d">總共作答 ${attempts} 題・正確率 ${attempts ? Math.round((correct / attempts) * 100) : 0}%・第一次就答對 ${firstRate}%</div>
+    <div class="d">需要加強：${weak.length ? weak.map((w) => `${esc(w.en)}（${esc(w.zh)}）`).join("、") : "目前沒有"}</div></div></div>
+    ${unitHtml}`, h);
+}
+const HELP_PAGES = [
+  ["怎麼玩", [
+    "你是村子裡一間小商店的老闆！",
+    "到森林<b>採集</b>木材、莓果、草藥",
+    "回商店把東西<b>放上貨架</b>，顧客會來買",
+    "用賺到的金幣找工匠<b>升級</b>，商店會越來越厲害",
+  ]],
+  ["怎麼操作", [
+    "<b>移動</b>：用左下角的搖桿，或直接點地面，角色會自己走過去",
+    "<b>互動</b>：靠近人或東西，按右下角的大按鈕（按鈕上會寫「對話」「砍樹」等等）",
+    "電腦：方向鍵／WASD 移動，空白鍵互動",
+    "右上角可以打開<b>背包、任務、單字本</b>",
+  ]],
+  ["英文挑戰", [
+    "採集、開寶箱、賣東西時，有時會跳出英文題目",
+    "按「聽發音」可以聽英文怎麼念",
+    "<b>答對</b>：拿到更多東西或小費",
+    "<b>答錯也沒關係</b>：不會扣錢，記住正確答案就好",
+  ]],
+  ["不知道要做什麼時", [
+    "看<b>左上角的目標</b>，下面有提示告訴你怎麼做",
+    "跟著<b>黃色箭頭</b>走",
+    "還是不懂？按右上角「說明」再看一次",
+  ]],
+];
+function openHelp(page = 0, after = null) {
+  const [title, lines] = HELP_PAGES[page], last = page === HELP_PAGES.length - 1;
+  openModal(`${closeBtn}<h2>${title}</h2>${lines.map((l, i) => `<div class="help-step"><b class="n">${i + 1}</b><div>${l}</div></div>`).join("")}
+    <div class="btn-row" style="margin-top:14px">${page > 0 ? `<button class="btn alt" data-act="prev">上一頁</button>` : ""}<button class="btn" data-act="next">${last ? "我知道了，開始！" : "下一頁"}</button></div>
+    <p class="help-dots">${page + 1} / ${HELP_PAGES.length}</p>`,
+  { __closable: true, prev: () => openHelp(page - 1, after), next: () => { if (last) closeModal(); else openHelp(page + 1, after); } },
+  after);
+}
+function openSettings() {
+  const s = S.settings;
+  openModal(`${closeBtn}<h2>設定</h2>
+    <label class="setting">音樂音量 <input type="range" min="0" max="1" step="0.1" value="${s.music}" id="set-music"></label>
+    <label class="setting">音效音量 <input type="range" min="0" max="1" step="0.1" value="${s.sfx}" id="set-sfx"></label>
+    <label class="setting">自動唸出英文 <input type="checkbox" id="set-speak" ${s.speak ? "checked" : ""}></label>
+    <div class="btn-row" style="margin-top:16px"><button class="btn alt" data-act="look">更換外觀</button><button class="btn alt" data-act="fs">全螢幕</button></div>
+    <div class="btn-row" style="margin-top:10px"><button class="btn" data-act="logout">存檔並登出</button></div>
+    <p class="muted" style="margin-top:12px">${cloudOn() ? "進度會自動存到雲端（每 3 分鐘、登出時），換平板輸入座號就能接續。" : "進度存在這台平板上。"}（最後存檔：${S.savedAt ? new Date(S.savedAt).toLocaleTimeString() : "—"}）</p>`,
+  { __closable: true, look: () => chooseLook(S.look, (look) => { S.look = look; writeSave(); }), fs: toggleFullscreen, logout: logout });
+  $("set-music").oninput = (ev) => { s.music = Number(ev.target.value); Sound.apply(); markDirty(); };
+  $("set-sfx").oninput = (ev) => { s.sfx = Number(ev.target.value); Sound.apply(); Sound.sfx("click"); markDirty(); };
+  $("set-speak").onchange = (ev) => { s.speak = ev.target.checked; markDirty(); };
+}
+function openVehicles() {
+  const rows = Object.entries(VEHICLES).map(([id, v]) => {
+    const own = S.vehicles.includes(id), riding = S.ride === id;
+    return `<div class="row"><img src="${icon("v_" + id)}" alt=""><div class="grow"><div class="t">${v.name} <span class="muted">${v.en}</span>${riding ? "（騎乘中）" : ""}</div>
+      <div class="d">在戶外移動速度 +${Math.round(v.speed * 100)}%${own ? "" : `・${v.cost} 金`}</div></div>
+      ${own ? (riding ? `<button class="btn small alt" data-act="off">下車</button>` : `<button class="btn small" data-act="ride_${id}">騎這個</button>`)
+        : `<button class="btn small" data-act="buy_${id}" ${S.coins >= v.cost ? "" : "disabled"}>買</button>`}</div>`;
+  }).join("");
+  const h = { __closable: true, off: () => { S.ride = null; markDirty(); openVehicles(); } };
+  for (const [id, v] of Object.entries(VEHICLES)) {
+    h["buy_" + id] = () => { if (S.coins < v.cost || S.vehicles.includes(id)) return; S.coins -= v.cost; S.vehicles.push(id); S.ride = id; Sound.sfx("up"); toast(`買了${v.name}（${v.en}）！在戶外會自動騎乘`, "gold"); writeSave(); openVehicles(); };
+    h["ride_" + id] = () => { S.ride = id; markDirty(); openVehicles(); };
+  }
+  openModal(`${closeBtn}<h2>阿輪車行</h2><p class="muted">你有 ${S.coins} 金。買了交通工具，在村子、森林、海邊走路都會變快（商店裡面不能騎）。</p><div class="list">${rows}</div>`, h);
+}
+function openWeapons() {
+  const rows = Object.entries(WEAPONS).map(([id, w]) => {
+    const own = S.weapons.includes(id), using = S.weapon === id;
+    return `<div class="row"><img src="${icon("w_" + id)}" alt=""><div class="grow"><div class="t">${w.name} <span class="muted">${w.en}</span>${using ? "（使用中）" : ""}</div>
+      <div class="d">力氣 ${w.dmg}・${w.ranged ? "可以從遠處射箭" : "要靠近動物才打得到"}${own ? "" : `・${w.cost} 金`}</div></div>
+      ${own ? (using ? "" : `<button class="btn small" data-act="use_${id}">使用</button>`) : `<button class="btn small" data-act="buy_${id}" ${S.coins >= w.cost ? "" : "disabled"}>買</button>`}</div>`;
+  }).join("");
+  const h = { __closable: true };
+  for (const [id, w] of Object.entries(WEAPONS)) {
+    h["buy_" + id] = () => {
+      if (S.coins < w.cost || S.weapons.includes(id)) return;
+      S.coins -= w.cost; S.weapons.push(id); S.weapon = id; Sound.sfx("up"); toast(`買了${w.name}（${w.en}）！`, "gold"); writeSave();
+      if (S.main.step === 13) { advanceMain(14); closeModal(); setTimeout(() => startRaid(true), 1800); return; }
+      openWeapons();
+    };
+    h["use_" + id] = () => { S.weapon = id; markDirty(); openWeapons(); };
+  }
+  openModal(`${closeBtn}<h2>工匠的武器</h2><p class="muted">你有 ${S.coins} 金。武器只用來把動物趕出村子，不會傷害牠們喔。</p><div class="list">${rows}</div>`, h);
+}
+function openUpgrades() {
+  const rows = Object.entries(UPGRADES).map(([id, u]) => {
+    const lv = S.up[id], max = u.values.length, cost = u.costs[lv];
+    const can = lv < max && S.coins >= (cost.coins || 0) && has(cost.items);
+    return `<div class="row"><img src="${icon("up_" + id)}" alt=""><div class="grow"><div class="t">${u.name} Lv${lv}${lv < max ? ` → Lv${lv + 1}` : "（最高級）"}</div>
+      <div class="d">${u.unit(u.values[lv - 1])}${lv < max ? ` → ${u.unit(u.values[lv])}` : ""}</div>${lv < max ? `<div class="d">需要：${costText(cost)}</div>` : ""}</div>
+      ${lv < max ? `<button class="btn small" data-act="up_${id}" ${can ? "" : "disabled"}>升級</button>` : ""}</div>`;
+  }).join("");
+  const h = { __closable: true };
+  for (const [id, u] of Object.entries(UPGRADES)) h["up_" + id] = () => {
+    const cost = u.costs[S.up[id]]; if (!cost || S.coins < (cost.coins || 0) || !has(cost.items)) return;
+    S.coins -= cost.coins || 0; takeItems(cost.items); S.up[id]++;
+    Sound.sfx("up"); toast(`${u.name}升級到 Lv${S.up[id]}！`, "gold");
+    if (id === "shelfSlots" && S.main.step === 6) advanceMain(7);
+    writeSave(); openUpgrades();
+  };
+  openModal(`${closeBtn}<h2>工匠的升級</h2><p class="muted">你有 ${S.coins} 金・木材 ${S.inv.wood || 0}・草藥 ${S.inv.herb || 0}・蘑菇 ${S.inv.mushroom || 0}・蜂蜜 ${S.inv.honey || 0}</p><div class="list">${rows}</div>`, h);
+}
+const HAIRS = ["#2b1d14", "#6b3a1a", "#d9a03a", "#c0442c", "#3a3a6a"];
+const SHIRTS = ["#d04a4a", "#3a7ad0", "#3f9a4f", "#e0a020", "#9a5ac0", "#e07aa0"];
+function chooseLook(cur, done) {
+  const look = { hair: cur ? cur.hair : HAIRS[0], shirt: cur ? cur.shirt : SHIRTS[1] };
+  const render = () => {
+    openModal(`<h2>選擇你的樣子</h2><canvas class="preview" id="pv" width="16" height="16"></canvas>
+      <b>頭髮</b><div class="swatches">${HAIRS.map((c, i) => `<button class="swatch ${c === look.hair ? "on" : ""}" style="background:${c}" data-act="h${i}" aria-label="頭髮顏色 ${i + 1}"></button>`).join("")}</div>
+      <b>衣服</b><div class="swatches">${SHIRTS.map((c, i) => `<button class="swatch ${c === look.shirt ? "on" : ""}" style="background:${c}" data-act="s${i}" aria-label="衣服顏色 ${i + 1}"></button>`).join("")}</div>
+      <button class="btn" style="width:100%" data-act="ok">就是這樣！</button>`, handlers);
+    $("pv").getContext("2d").drawImage(charSprite(look, "down", 0), 0, 0);
+  };
+  const handlers = { ok: () => { closeModal(); done(look); } };
+  HAIRS.forEach((c, i) => { handlers["h" + i] = () => { look.hair = c; render(); }; });
+  SHIRTS.forEach((c, i) => { handlers["s" + i] = () => { look.shirt = c; render(); }; });
+  render();
+}
+function toggleFullscreen() {
+  try { if (document.fullscreenElement) document.exitFullscreen(); else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement); } catch { toast("這台裝置不支援全螢幕"); }
+}
+
+/* ---------------- 輸入 ---------------- */
+const input = {
+  keys: new Set(), jx: 0, jy: 0, joyId: null, ox: 0, oy: 0,
+  reset() { this.keys.clear(); this.jx = this.jy = 0; this.joyId = null; joyIdle(); },
+  vec() {
+    let x = this.jx, y = this.jy;
+    const k = this.keys;
+    if (k.has("ArrowLeft") || k.has("KeyA")) x -= 1; if (k.has("ArrowRight") || k.has("KeyD")) x += 1;
+    if (k.has("ArrowUp") || k.has("KeyW")) y -= 1; if (k.has("ArrowDown") || k.has("KeyS")) y += 1;
+    const m = Math.hypot(x, y); return m > 1 ? { x: x / m, y: y / m } : { x, y };
+  },
+};
+addEventListener("keydown", (ev) => {
+  if (!S || $("title").hidden === false) return;
+  if (modalOpen()) { if (ev.code === "Escape" && modalHandlers.__closable) closeModal(); return; }
+  input.keys.add(ev.code);
+  if (ev.code === "Space" || ev.code === "KeyE" || ev.code === "Enter") { ev.preventDefault(); interact(currentTarget); }
+  if (ev.code === "KeyI" || ev.code === "KeyB") openBag();
+  if (ev.code === "KeyQ") openQuests();
+});
+addEventListener("keyup", (ev) => input.keys.delete(ev.code));
+addEventListener("blur", () => input.reset());
+const joyZone = $("joy-zone"), joyBase = $("joy-base"), joyKnob = $("joy-knob");
+joyZone.addEventListener("pointerdown", (ev) => {
+  if (input.joyId !== null) return;
+  Sound.init(); Sound.startMusic();
+  input.joyId = ev.pointerId; input.ox = ev.clientX; input.oy = ev.clientY;
+  const zr = joyZone.getBoundingClientRect();
+  joyBase.style.left = ev.clientX - zr.left + "px"; joyBase.style.top = ev.clientY - zr.top + "px"; joyBase.classList.remove("idle");
+  joyKnob.style.transform = ""; joyZone.setPointerCapture(ev.pointerId);
+  walkPath = null; walkTarget = null;
+});
+joyZone.addEventListener("pointermove", (ev) => {
+  if (ev.pointerId !== input.joyId) return;
+  let dx = ev.clientX - input.ox, dy = ev.clientY - input.oy; const max = 46, d = Math.hypot(dx, dy);
+  if (d > max) { dx = (dx / d) * max; dy = (dy / d) * max; }
+  joyKnob.style.transform = `translate(${dx}px,${dy}px)`;
+  const dead = 8; input.jx = Math.abs(dx) < dead && Math.abs(dy) < dead ? 0 : dx / max; input.jy = Math.abs(dx) < dead && Math.abs(dy) < dead ? 0 : dy / max;
+});
+function joyIdle() { const b = document.getElementById("joy-base"), k = document.getElementById("joy-knob"); b.style.left = ""; b.style.top = ""; b.classList.add("idle"); k.style.transform = ""; }
+const joyEnd = (ev) => { if (ev.pointerId !== input.joyId) return; input.joyId = null; input.jx = input.jy = 0; joyIdle(); };
+joyZone.addEventListener("pointerup", joyEnd); joyZone.addEventListener("pointercancel", joyEnd);
+$("btn-a").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); Sound.startMusic(); if (!modalOpen()) interact(currentTarget); });
+document.querySelectorAll("#menu-btns button").forEach((b) => b.addEventListener("click", () => {
+  Sound.init(); Sound.sfx("click");
+  ({ bag: openBag, quests: openQuests, words: openWords, settings: openSettings, help: () => openHelp() })[b.dataset.open]();
+}));
+
+/* ---------------- 動物入侵：警報 → 拿武器把動物趕出村子 ---------------- */
+let raid = null;
+function startRaid(scripted = false) {
+  if (raid) return;
+  const kinds = scripted ? ["boar", "raccoon", "crow"] : Array.from({ length: randInt(2, 4) }, () => pick(Object.keys(ANIMALS)));
+  const edges = [[1.5, 3], [1.5, 20], [38.5, 4], [38.5, 21], [12, 1.5], [26, 1.5]];
+  raid = { scripted, scared: 0, ate: 0, animals: kinds.map((k, i) => {
+    const [ex, ey] = edges[(i + randInt(0, 5)) % edges.length];
+    return { kind: k, x: ex * T, y: ey * T, home: { x: ex * T, y: ey * T }, hp: ANIMALS[k].hp, state: "come", target: null, t: 0, hitT: 0, dir: 1, delay: i * 2.5 };
+  }) };
+  Sound.sfx("alarm");
+  const names = [...new Set(kinds.map((k) => ANIMALS[k].name))].join("、");
+  toast(`警報！${names}跑進村子了！`, "bad");
+  setTimeout(() => toast(scene.name === "village" ? "快把牠們趕走，保護農田和商店！" : "快回村子保護農田和商店！", "bad"), 900);
+}
+function pickRaidTarget(a) {
+  const crops = S.farm.map((p, i) => i).filter((i) => S.farm[i].c && !raid.animals.some((o) => o !== a && o.target && o.target.plot === i));
+  if (crops.length) { const i = pick(crops), e = plotEnt(i); return { plot: i, x: e.tx * T + 8, y: e.ty * T + 12 }; }
+  return { shop: true, x: 8.5 * T, y: 9.8 * T };
+}
+function updateRaid(dt) {
+  if (!raid) { maybeScheduleRaid(); return; }
+  for (const a of raid.animals) {
+    const def = ANIMALS[a.kind];
+    if (a.delay > 0) { a.delay -= dt; continue; }
+    a.t += dt; if (a.hitT > 0) a.hitT -= dt;
+    if (a.state === "come") {
+      if (!a.target) a.target = pickRaidTarget(a);
+      const dx = a.target.x - a.x, dy = a.target.y - a.y, d = Math.hypot(dx, dy), sp = def.speed * dt;
+      if (Math.abs(dx) > 0.5) a.dir = dx > 0 ? 1 : -1;
+      if (d <= sp) { a.x = a.target.x; a.y = a.target.y; a.state = "eat"; a.t = 0; say(a, a.target.shop ? "嘿嘿，偷錢！" : "嚼嚼嚼…", 2.5, true); }
+      else { a.x += dx / d * sp; a.y += dy / d * sp; }
+    } else if (a.state === "eat") {
+      if (a.target.plot !== undefined && !S.farm[a.target.plot].c) { a.target = null; a.state = "come"; continue; }
+      if (a.t >= 5) {
+        if (a.target.plot !== undefined) { const p = S.farm[a.target.plot]; toast(`${def.name}偷吃了田裡的${ITEMS[p.c].zh}！`, "bad"); S.farm[a.target.plot] = emptyPlot(); }
+        else { const lost = Math.min(S.coins, randInt(5, 15)); S.coins -= lost; if (lost) toast(`${def.name}從商店偷走了 ${lost} 金！`, "bad"); }
+        raid.ate++; markDirty(); a.state = "flee"; a.reward = false;
+      }
+    } else if (a.state === "flee") {
+      const dx = a.home.x - a.x, dy = a.home.y - a.y, d = Math.hypot(dx, dy), sp = def.speed * 2.2 * dt;
+      if (Math.abs(dx) > 0.5) a.dir = dx > 0 ? 1 : -1;
+      if (d <= sp) a.gone = true; else { a.x += dx / d * sp; a.y += dy / d * sp; }
+    }
+  }
+  raid.animals = raid.animals.filter((a) => !a.gone);
+  if (!raid.animals.length) endRaid();
+}
+function endRaid() {
+  const r = raid; raid = null;
+  const msg = r.ate ? `警報解除。趕走 ${r.scared} 隻動物，被偷了 ${r.ate} 次。` : `警報解除！你趕走了 ${r.scared} 隻動物，村子很安全！`;
+  toast(msg, r.ate ? "" : "gold");
+  if (!r.ate && r.scared) { const bonus = 10 + r.scared * 3; setTimeout(() => { giveReward({ coins: bonus }); toast(`村民送你謝禮 ${bonus} 金`, "gold"); }, 900); }
+  if (S.main.step === 14) setTimeout(() => advanceMain(15), 1500);
+  writeSave();
+}
+function maybeScheduleRaid() {
+  if (S.main.step < 15) return;
+  const day0 = gameDay() * DAY;
+  if (S.nextRaid === null || S.nextRaid === undefined || S.nextRaid < day0) {
+    S.nextRaid = rand() < 0.75 ? day0 + randInt(9 * 60, 16 * 60) : day0 + DAY + randInt(9 * 60, 16 * 60);
+    markDirty();
+  }
+  if (S.min >= S.nextRaid) {
+    const late = S.min - S.nextRaid > 90;   // 休息睡覺時錯過的就不算
+    S.nextRaid = gameDay() * DAY + DAY + randInt(9 * 60, 16 * 60);
+    if (!late) startRaid(false);
+  }
+}
+function animalInRange() {
+  if (!raid || scene.name !== "village") return null;
+  const range = S.weapon ? WEAPONS[S.weapon].range : 22;
+  let best = null, bd = 1e9;
+  for (const a of raid.animals) {
+    if (a.delay > 0 || a.state === "flee") continue;
+    const d = Math.hypot(a.x - player.x, a.y - player.y);
+    if (d <= range && d < bd) { bd = d; best = a; }
+  }
+  return best;
+}
+let attackCd = 0, swing = 0;
+function attackAnimal(a) {
+  if (!a || a.state === "flee" || attackCd > 0) return;
+  if (!S.weapon) { say(a, "哼！不怕你！", 1.5, true); return toast("沒有武器趕不走！到工匠阿木那裡買一把", "bad"); }
+  const w = WEAPONS[S.weapon];
+  attackCd = w.cd;
+  const dx = a.x - player.x, dy = a.y - player.y;
+  player.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+  if (w.ranged) { Sound.sfx("bow"); fx.push({ k: "arrow", sc: "village", x: player.x, y: player.y - 8, x1: a.x, y1: a.y - 6, t: 0, life: 0.18 }); }
+  else { Sound.sfx("swish"); swing = 0.2; }
+  setTimeout(() => {
+    if (a.state === "flee" || a.gone) return;
+    a.hp -= w.dmg; a.hitT = 0.25; Sound.sfx("hit"); burst(a.x, a.y - 6, "#ffffff");
+    const d = Math.hypot(dx, dy) || 1; a.x += dx / d * 6; a.y += dy / d * 6;
+    if (a.hp <= 0) {
+      a.state = "flee"; raid.scared++; const rw = ANIMALS[a.kind].reward; S.coins += rw; Sound.sfx("coin");
+      popAt(a.x, a.y - 10, "coin", `+${rw}`); say(a, "哇！快逃！", 1.6, true); markDirty();
+    } else { a.state = "come"; say(a, "好痛！", 1, true); }
+  }, w.ranged ? 180 : 90);
+}
+function drawAnimal(a, cx, cy) {
+  if (a.delay > 0) return;
+  const x = Math.round(a.x - cx), y = Math.round(a.y - cy), f = a.dir < 0, flash = a.hitT > 0;
+  const R = (px, py, col, w = 1, h = 1) => P(g, f ? x - px - w : x + px, y + py, flash ? "#ffffff" : col, w, h);
+  const bob = (a.state === "eat" ? Math.round(Math.sin(a.t * 14)) : Math.floor(a.t * 8) % 2);
+  g.fillStyle = "#0003"; g.fillRect(x - 6, y - 1, 12, 2);
+  if (a.kind === "boar") {
+    R(-7, -9 - bob, "#3a2414", 12, 8); R(-6, -10 - bob, "#5a3a20", 10, 7); R(4, -8 - bob, "#5a3a20", 4, 5); R(7, -6 - bob, "#c09080", 2, 2); R(6, -9 - bob, "#1a0f08"); R(6, -5 - bob, "#fff8e0", 2, 1);
+    R(-5, -2, "#2b1d14", 2, 2); R(2, -2, "#2b1d14", 2, 2); R(-4, -11 - bob, "#3a2414", 6, 1);
+  } else if (a.kind === "raccoon") {
+    R(-6, -8 - bob, "#6a6a72", 10, 6); R(3, -10 - bob, "#8a8a92", 5, 6); R(4, -8 - bob, "#2b2b30", 4, 2); R(5, -8 - bob, "#fff"); R(8, -7 - bob, "#1a1a1a");
+    R(-10, -9 - bob, "#8a8a92", 4, 2); R(-11, -9 - bob, "#2b2b30", 1, 2); R(-8, -9 - bob, "#2b2b30", 1, 2); R(-4, -2, "#2b2b30", 2, 2); R(1, -2, "#2b2b30", 2, 2);
+  } else {
+    const fl = Math.floor(a.t * 10) % 2, hy = a.state === "eat" ? 0 : -6;
+    R(-4, -7 + hy, "#1a1a28", 8, 5); R(3, -9 + hy, "#1a1a28", 4, 4); R(7, -8 + hy, "#e0b040", 2, 1); R(5, -8 + hy, "#ffffff");
+    R(-3, (fl ? -11 : -5) + hy, "#2b2b40", 6, 3); R(-6, -6 + hy, "#2b2b40", 2, 2);
+  }
+  if (a.hp < ANIMALS[a.kind].hp && a.state !== "flee") { P(g, x - 7, y - 18, "#2b1d14", 14, 3); P(g, x - 6, y - 17, "#e0281c", Math.round(12 * a.hp / ANIMALS[a.kind].hp), 1); }
+}
+
+/* ---------------- 對話框（路人閒聊、動物叫聲；用 HTML 顯示，字比較清楚） ---------------- */
+const speeches = [];
+function say(who, text, life = 3, animal = false) {
+  for (let i = speeches.length - 1; i >= 0; i--) if (speeches[i].who === who) { speeches[i].el.remove(); speeches.splice(i, 1); }
+  const el = document.createElement("div"); el.className = "say-bub" + (animal ? " animal" : ""); el.textContent = text;
+  $("bubbles").appendChild(el);
+  speeches.push({ who, text, t: 0, life, el, sc: animal ? "village" : scene.name });
+}
+function speechPos(w) { return w.px !== undefined ? { x: w.px, y: w.py - 22 } : { x: w.x, y: w.y - (w.kind === "crow" ? 22 : 16) }; }
+function updateSpeeches(dt) {
+  for (let i = speeches.length - 1; i >= 0; i--) {
+    const sp = speeches[i]; sp.t += dt;
+    if (sp.t >= sp.life || sp.sc !== scene.name || sp.who.gone) { sp.el.remove(); speeches.splice(i, 1); continue; }
+    const pos = speechPos(sp.who), hidden = modalOpen() || (sp.who.walker && !entVisible(sp.who));
+    sp.el.style.display = hidden ? "none" : "";
+    sp.el.style.left = `${(pos.x - cam.x) * scale}px`; sp.el.style.top = `${(pos.y - cam.y) * scale}px`;
+  }
+}
+let chatterT = 3;
+function updateChatter(dt) {
+  chatterT -= dt;
+  const ws = scene.ents.filter((e) => e.walker && entVisible(e) && Math.abs(e.px - player.x) < VW / 2 && Math.abs(e.py - player.y) < VH / 2);
+  // 玩家經過時打招呼
+  for (const w of ws) {
+    if (Math.hypot(w.px - player.x, w.py - player.y) < 26 && (w.greetAt || -99) < clock - 40 && !speeches.some((x) => x.who === w)) { w.greetAt = clock; say(w, pick(GREETS), 2.2); }
+  }
+  if (chatterT > 0 || !ws.length) return;
+  chatterT = 3 + rand() * 4;
+  // 兩個路人靠近時會聊天
+  for (const a of ws) for (const b of ws) {
+    if (a === b || Math.hypot(a.px - b.px, a.py - b.py) > 56) continue;
+    const [l1, l2] = pick(CHATS);
+    for (const w of [a, b]) { w.wait = 5; w.goal = null; w.moving = false; }
+    a.dir = b.px > a.px ? "right" : "left"; b.dir = a.px > b.px ? "right" : "left";
+    say(a, l1, 2.6); setTimeout(() => { if (scene.ents.includes(b)) say(b, l2, 2.6); }, 1500);
+    return;
+  }
+  const w = pick(ws); if (!speeches.some((x) => x.who === w)) say(w, pick(CHATTER), 2.5);
+}
+
+/* ---------------- 主角與場景切換 ---------------- */
+let scene = null;
+const player = { x: 0, y: 0, dir: "down", moving: false, anim: 0, stepT: 0 };
+let currentTarget = null, fading = false;
+function fade(mid) { fading = true; $("fade").classList.add("on"); setTimeout(() => { mid(); $("fade").classList.remove("on"); setTimeout(() => { fading = false; }, 250); }, 260); }
+function enterScene(name, tx, ty, dir) {
+  scene = scenes[name]; S.scene = name;
+  player.x = tx * T; player.y = ty * T; if (dir) player.dir = dir;
+  walkPath = null; walkTarget = null;
+  customers = []; markDirty();
+}
+function applyFlags() {
+  const f = scenes.forest;
+  const t = S.flags.bridge ? TILE.BRIDGE : TILE.BROKEN;
+  rect(f, 36, 16, 37, 17, t); rebuildSolid(f);
+  const v = scenes.village;
+  if (v) { rect(v, 30, 23, 31, 23, S.flags.beach ? TILE.PATH : TILE.FENCE); const sg = v.ents.find((e) => e.id === "sign_beach"); if (sg) sg.text = S.flags.beach ? "↓ 海邊" : "↓ 海邊（存到 300 金，找村長開通）"; rebuildSolid(v); }
+}
+function blocked(px, py) {
+  const pts = [[px - 5, py - 5], [px + 5, py - 5], [px - 5, py - 1], [px + 5, py - 1]];
+  for (const [x, y] of pts) {
+    const tx = Math.floor(x / T), ty = Math.floor(y / T);
+    if (tx < 0 || ty < 0 || tx >= scene.w || ty >= scene.h) return true;
+    if (scene.solid[ty * scene.w + tx]) return true;
+  }
+  return false;
+}
+const DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+function entCenter(e) { return { x: (e.tx + e.w / 2) * T, y: (e.ty + e.h / 2) * T }; }
+function entVisible(e) {
+  if (e.walker) { const h = minOfDay() / 60; return h >= 6 && h < 21; }   // 晚上村民回家
+  if (e.type === "lost") return S.main.step === 7 && S.main.foxStarted && !S.main.found[e.idx];
+  return true;
+}
+const INTERACTIVE = new Set(["npc", "node", "shelf", "counter", "bed", "board", "sign", "lost", "bench", "dock", "plot", "clock", "stall", "bikes"]);
+function findTarget() {
+  const an = animalInRange(); if (an) return { type: "animal", a: an, tx: an.x / T - 0.5, ty: an.y / T - 1, w: 1, h: 1 };
+  const [vx, vy] = DIRV[player.dir];
+  const fx = player.x + vx * 12, fy = player.y - 6 + vy * 12;
+  let best = null, bd = 1e9;
+  for (const e of scene.ents) {
+    if (!INTERACTIVE.has(e.type) || !entVisible(e)) continue;
+    const c = entCenter(e);
+    const hw = e.w * 8 + 6, hh = e.h * 8 + 6;
+    const inFront = Math.abs(fx - c.x) <= hw && Math.abs(fy - c.y) <= hh;
+    const d = Math.hypot(player.x - c.x, player.y - 6 - c.y);
+    const score = inFront ? d - 100 : d;
+    if ((inFront || d < 20) && score < bd) { bd = score; best = e; }
+  }
+  return best;
+}
+const A_LABEL = { stall: "種子店", bikes: "車行", animal: "攻擊", npc: "對話", shelf: "貨架", counter: "收銀台", bed: "睡覺", board: "任務板", sign: "看看", lost: "撿起", bench: "製作", dock: "釣魚", bed: "休息", clock: "時鐘" };
+function targetLabel(e) {
+  if (!e) return "互動";
+  if (e.type === "node") return e.kind === "chest" ? "打開" : NODE_KINDS[e.kind].verb;
+  if (e.type === "plot") { const p = S.farm[e.idx]; return !plotUnlocked(e.idx) ? "田地" : !p.c ? "播種" : cropReady(p) ? "收成" : !p.wet ? "澆水" : "看看"; }
+  return A_LABEL[e.type] || "互動";
+}
+
+/* ---------------- 目標箭頭 ---------------- */
+function objectiveText() {
+  if (raid) return `警報！把村子裡的動物趕走（還有 ${raid.animals.filter((a) => a.state !== "flee").length} 隻）`;
+  const st = S.main.step;
+  if (st === 10) return `${MAIN[10]}（${Math.min(300, S.coins)}/300）`;
+  if (st === 11) return `${MAIN[11]}（${Math.min(5, S.inv.shell || 0)}/5）`;
+  if (st === 5) return `${MAIN[5]}（木材 ${Math.min(15, S.inv.wood || 0)}/15）`;
+  if (st === 7 && S.main.foxStarted) return `幫小狐狸找寶物（${S.main.found.filter(Boolean).length}/3）${S.main.found.every(Boolean) ? "→ 回去找小狐狸" : ""}`;
+  if (st === 8) return `${MAIN[8]}（木材 ${Math.min(25, S.inv.wood || 0)}/25・草藥 ${Math.min(8, S.inv.herb || 0)}/8）`;
+  return MAIN[Math.min(st, MAIN.length - 1)];
+}
+function objectiveHint() {
+  if (raid) return !S.weapon ? "你還沒有武器！先去工匠阿木那裡買" : scene.name !== "village" ? "快回村子！" : "靠近動物按右下角「攻擊」，或直接點動物";
+  const st = Math.min(S.main.step, MAIN_HINT.length - 1);
+  if (st === 10 && S.coins >= 300) return "錢夠了！去找村長，按「對話」";
+  if (st === 16 && (S.inv.necklace || 0) >= 1) return "項鍊做好了！到海邊拿給漁夫阿海";
+  if (st === 7 && S.main.foxStarted) return S.main.found.every(Boolean) ? "寶物都找到了！回去跟小狐狸說話" : "地上閃閃發光的就是寶物，走過去按「撿起」";
+  if (st === 5 && (S.inv.wood || 0) >= 15) return "木材夠了！回村子交給村長";
+  if (st === 8 && has({ wood: 25, herb: 8 })) return "材料夠了！回村子找工匠，按「對話」";
+  if (st === 6 && S.coins < 100) return "錢還不夠 100 金：去森林採東西，放上貨架賣錢";
+  return MAIN_HINT[st];
+}
+function objectiveTarget() {
+  const st = S.main.step, find = (sc, id) => ({ sc, e: scenes[sc].ents.find((x) => x.id === id) });
+  const nearestNode = (kind, sc = "forest") => {
+    const list = scenes[sc].ents.filter((e) => e.type === "node" && e.kind === kind && nodeReady(e));
+    if (!list.length) return null;
+    const px = scene.name === sc ? player.x : scenes[sc].spawn.tx * T, py = scene.name === sc ? player.y : scenes[sc].spawn.ty * T;
+    list.sort((a, b) => Math.hypot(entCenter(a).x - px, entCenter(a).y - py) - Math.hypot(entCenter(b).x - px, entCenter(b).y - py));
+    return { sc, e: list[0] };
+  };
+  if (raid) {
+    if (!S.weapon) return find("village", "craft");
+    const live = raid.animals.filter((a) => a.delay <= 0 && a.state !== "flee");
+    if (!live.length) return null;
+    live.sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y));
+    return { sc: "village", e: { tx: live[0].x / T - 0.5, ty: live[0].y / T - 1.2, w: 1, h: 1 } };
+  }
+  switch (st) {
+    case 0: case 4: return find("village", "mayor");
+    case 1: return nearestNode("tree");
+    case 2: return find("shop", "shelf0");
+    case 3: return find("shop", "counter");
+    case 5: return (S.inv.wood || 0) >= 15 ? find("village", "mayor") : nearestNode("tree");
+    case 6: return find("village", "craft");
+    case 7: {
+      if (!S.main.foxStarted || S.main.found.every(Boolean)) return find("forest", "fox");
+      const i = S.main.found.findIndex((f) => !f); return find("forest", "lost_" + i);
+    }
+    case 8: return has({ wood: 25, herb: 8 }) ? find("village", "craft") : nearestNode((S.inv.wood || 0) < 25 ? "tree" : "herb");
+    case 9: return S.flags.bridge ? nearestNode("hive") : null;
+    case 10: return S.coins >= 300 ? find("village", "mayor") : null;
+    case 11: return nearestNode("shell", "beach");
+    case 12: return find("beach", "fisherman");
+    case 13: return find("village", "craft");
+    case 15: return find("village", "mayor");
+    case 16: return (S.inv.necklace || 0) >= 1 ? find("beach", "fisherman") : has({ shell: 3, flower: 1 }) ? find("shop", "bench") : (S.inv.shell || 0) < 3 ? nearestNode("shell", "beach") : nearestNode("flower", "village");
+    default: return null;
+  }
+}
+function arrowPoint() {
+  const t = objectiveTarget(); if (!t || !t.e) return null;
+  if (t.sc === scene.name) { const c = entCenter(t.e); return { x: c.x, y: t.e.ty * T - 4 }; }
+  const via = scene.name !== "village" ? "village" : t.sc;
+  const w = scene.warps.find((x) => x.to === via); if (!w) return null;
+  return { x: (w.x + w.w / 2) * T, y: w.y * T - 2 };
+}
+
+/* ---------------- 畫面繪製 ---------------- */
+const cv = $("world"), g = cv.getContext("2d");
+let scale = 3, VW = 320, VH = 180;
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  scale = Math.max(1, Math.round(Math.min(w / (T * 16), h / (T * 10))));  // 平板約顯示 16×12 格，角色較大
+  VW = Math.ceil(w / scale); VH = Math.ceil(h / scale);
+  cv.width = VW; cv.height = VH; cv.style.width = VW * scale + "px"; cv.style.height = VH * scale + "px";
+  g.imageSmoothingEnabled = false;
+}
+addEventListener("resize", resize);
+let clock = 0;
+function drawEnt(e, cx, cy) {
+  const x = e.tx * T - cx, y = e.ty * T - cy;
+  switch (e.type) {
+    case "building": return drawBuilding(e, x, y);
+    case "npc": {
+      if (e.fox) { g.drawImage(FOX, x, y + 1 + (Math.sin(clock * 3) > 0.6 ? -1 : 0)); return; }
+      if (e.walker && !entVisible(e)) return;
+      const rx = Math.round(x), ry = Math.round(y);
+      g.fillStyle = "#0003"; g.fillRect(rx + 3, ry + 14, 10, 2);
+      const fr = e.moving ? (Math.floor((e.anim || 0) * 8) % 2) + 1 : 0;
+      g.drawImage(charSprite(e.look, e.moving ? e.dir : nearDir(e), fr), rx, ry - 1 - (fr === 1 ? 1 : 0)); return;
+    }
+    case "node": return drawNode(e, x + (e.shake > 0 ? Math.round(Math.sin(clock * 70) * 1.5) : 0), y);
+    case "plot": return drawPlot(e, Math.round(x), Math.round(y));
+    case "clock": {   // 落地時鐘：指針顯示遊戲時間
+      P(g, x + 2, y - 14, "#4a2c18", 12, 30); P(g, x + 3, y - 13, "#8b5a2b", 10, 28); P(g, x + 2, y - 16, "#6b4226", 12, 3);
+      circle(g, x + 8, y - 6, 5, "#2b1d14"); circle(g, x + 8, y - 6, 4, "#f4f0e0");
+      for (const [a, b] of [[0, -4], [4, 0], [0, 4], [-4, 0]]) P(g, x + 8 + a, y - 6 + b, "#8a7a66");
+      const m = minOfDay(), ha = ((m / 60) % 12) / 12 * Math.PI * 2, ma = (m % 60) / 60 * Math.PI * 2;
+      for (let r = 0; r <= 2.5; r += 0.5) P(g, Math.round(x + 8 + Math.sin(ha) * r), Math.round(y - 6 - Math.cos(ha) * r), "#2b1d14");
+      for (let r = 0; r <= 3.5; r += 0.5) P(g, Math.round(x + 8 + Math.sin(ma) * r), Math.round(y - 6 - Math.cos(ma) * r), "#c0392b");
+      P(g, x + 5, y + 2, "#3a2414", 6, 10); P(g, x + 7 + Math.round(Math.sin(clock * 3) * 2), y + 8, "#e0c040", 2, 2); P(g, x + 8, y + 3, "#c9a040", 1, 5);
+      return;
+    }
+    case "dock": {
+      P(g, x - 8, y + 1, "#6b4226", 24, 14); P(g, x - 8, y + 1, "#a8763e", 24, 12);
+      for (let i = 0; i < 24; i += 6) P(g, x - 8 + i, y + 1, "#7a5230", 1, 12);
+      P(g, x - 8, y + 13, "#4a2c18", 2, 4); P(g, x + 14, y + 13, "#4a2c18", 2, 4);
+      if (!action) { P(g, x - 12, y + 3, "#ffffff", 1, 1); P(g, x - 13, y + 8 + Math.round(Math.sin(clock * 3)), "#d04a4a", 3, 2); P(g, x - 13, y + 10 + Math.round(Math.sin(clock * 3)), "#ffffff", 3, 1); }
+      return;
+    }
+    case "shelf": return drawShelf(e, x, y);
+    case "stall": {   // 綠芽種子店的攤位
+      P(g, x + 2, y - 14, "#5a3a20", 2, 28); P(g, x + 44, y - 14, "#5a3a20", 2, 28);
+      for (let i = 0; i < 6; i++) { P(g, x - 2 + i * 9, y - 20, i % 2 ? "#fffaf0" : "#3f9a4f", 9, 8); P(g, x + i * 9, y - 12, i % 2 ? "#fffaf0" : "#3f9a4f", 5, 2); }
+      P(g, x - 2, y - 21, "#24522a", 54, 1);
+      P(g, x + 9, y - 32, "#5a3a20", 30, 12); P(g, x + 10, y - 31, "#f4e9d0", 28, 10);
+      g.drawImage(ICONS.carrot, x + 11, y - 30, 8, 8); g.drawImage(ICONS.tomato, x + 20, y - 30, 8, 8); g.drawImage(ICONS.sunflower, x + 29, y - 30, 8, 8);
+      P(g, x, y + 3, "#6b4226", 48, 13); P(g, x, y + 3, "#a8763e", 48, 3);
+      for (const [i, col] of [[0, "#e8822a"], [1, "#d8342c"], [2, "#e0284a"], [3, "#f2c230"], [4, "#e07a20"]]) { P(g, x + 4 + i * 9, y, "#f4e9d0", 6, 6); P(g, x + 5 + i * 9, y + 1, col, 4, 3); }
+      return;
+    }
+    case "bikes": {   // 車行門口的腳踏車
+      for (const [wx, col] of [[0, "#d04a4a"], [7, "#3a7ad0"]]) {
+        for (const ox of [2, 9]) { circle(g, x + wx + ox, y + 12, 3, "#2b1d14"); circle(g, x + wx + ox, y + 12, 2, "#c8c8d0"); P(g, x + wx + ox, y + 12, "#2b1d14"); }
+        P(g, x + wx + 2, y + 8, col, 8, 1); P(g, x + wx + 5, y + 8, col, 1, 4); P(g, x + wx + 8, y + 6, "#2b1d14", 2, 1);
+      }
+      return;
+    }
+    case "counter": {
+      P(g, x, y + 2, "#7a4a28", 48, 14); P(g, x, y + 2, "#a8683a", 48, 3); P(g, x, y + 15, "#4a2c18", 48, 1);
+      P(g, x + 30, y - 4, "#5a5a6a", 12, 8); P(g, x + 31, y - 3, "#9adfa0", 6, 3); P(g, x + 38, y - 3, "#e0c040", 3, 2);
+      return;
+    }
+    case "bed": { P(g, x + 1, y, "#7a4a28", 14, 32); P(g, x + 2, y + 2, "#f4f0e0", 12, 6); P(g, x + 2, y + 9, "#4a7ad0", 12, 21); P(g, x + 2, y + 9, "#6a9ae0", 12, 2); return; }
+    case "bench": {
+      P(g, x, y + 2, "#6b4226", 32, 12); P(g, x, y + 2, "#9a6a3a", 32, 3); P(g, x + 2, y + 14, "#4a2c18", 3, 2); P(g, x + 27, y + 14, "#4a2c18", 3, 2);
+      P(g, x + 4, y - 1, "#8a8a9a", 8, 3); P(g, x + 7, y - 4, "#6b4226", 2, 4);
+      P(g, x + 15, y - 4, "#c0284a", 5, 6); P(g, x + 15, y - 5, "#f4e9d0", 5, 1); P(g, x + 23, y - 1, "#e8e0d0", 6, 3);
+      if (S.main.step < 6) { P(g, x + 12, y + 5, "#2b1d14", 1, 7); P(g, x + 13, y + 7, "#2b1d14", 2, 1); P(g, x + 20, y + 8, "#2b1d14", 4, 1); }
+      return;
+    }
+    case "plant": { P(g, x + 4, y + 10, "#a0583a", 8, 6); circle(g, x + 8, y + 7, 5, "#3f8a45"); circle(g, x + 6, y + 5, 2, "#58b368"); return; }
+    case "fountain": {
+      circle(g, x + 16, y + 17, 14, "#8a8a9a"); circle(g, x + 16, y + 17, 11, "#3f7fd0"); circle(g, x + 16, y + 17, 3, "#b0b0c0");
+      const s = Math.floor(clock * 4) % 3; P(g, x + 15, y + 6 + s, "#9fd0ff", 2, 8 - s); P(g, x + 9 + s, y + 14, "#cfe8ff", 1, 1); P(g, x + 22 - s, y + 15, "#cfe8ff", 1, 1);
+      return;
+    }
+    case "board": { P(g, x + 2, y + 9, "#5a3a20", 2, 7); P(g, x + 12, y + 9, "#5a3a20", 2, 7); P(g, x, y, "#8b5a2b", 16, 11); P(g, x + 2, y + 2, "#f4e9d0", 5, 6); P(g, x + 9, y + 2, "#fff4c0", 5, 4); P(g, x + 3, y + 3, "#999", 3, 1); P(g, x + 3, y + 5, "#999", 3, 1); return; }
+    case "sign": { P(g, x + 7, y + 8, "#5a3a20", 2, 8); P(g, x + 1, y + 2, "#a8763e", 14, 7); P(g, x + 4, y + 5, "#2b1d14", 6, 1); P(g, x + 9, y + 4, "#2b1d14", 1, 3); P(g, x + 10, y + 5, "#2b1d14", 1, 1); return; }
+    case "lost": {
+      if (!entVisible(e)) return;
+      const tw = Math.sin(clock * 6 + e.idx) > 0 ? 1 : 0;
+      P(g, x + 7, y + 4 - tw, "#fff7a0", 2, 8 + tw * 2); P(g, x + 4 - tw, y + 7, "#fff7a0", 8 + tw * 2, 2); P(g, x + 7, y + 7, "#ffffff", 2, 2);
+      return;
+    }
+  }
+}
+function nearDir(e) {
+  const c = entCenter(e), dx = player.x - c.x, dy = player.y - 8 - c.y;
+  if (Math.hypot(dx, dy) > 40) return e.dir || "down";
+  return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+}
+function drawBuilding(e, x, y) {
+  const w = e.w * T, roofH = 3 * T;
+  // 屋頂
+  for (let i = 0; i < roofH; i++) { const inset = Math.max(0, 6 - Math.floor(i / 2)); P(g, x - 4 + inset, y + i, i % 6 < 3 ? e.roof : e.roofDark, w + 8 - inset * 2, 1); }
+  P(g, x - 4, y + roofH - 2, "#2b1d14", w + 8, 2);
+  // 牆
+  P(g, x, y + roofH, "#efe0c0", w, 2 * T); P(g, x, y + roofH, "#d8c7a8", w, 2); P(g, x, y + roofH + 2 * T - 2, "#a08a68", w, 2);
+  for (let i = 0; i < e.w; i++) {
+    const tx = e.tx + i; if (tx === e.door.x) continue;
+    if (i % 2 === 1) { const wx = x + i * T + 3; P(g, wx - 1, y + roofH + 6, "#6b4226", 12, 12); P(g, wx, y + roofH + 7, "#8ec5e8", 10, 10); P(g, wx + 4, y + roofH + 7, "#6b4226", 1, 10); P(g, wx, y + roofH + 11, "#6b4226", 10, 1); P(g, wx + 1, y + roofH + 8, "#d0ecff", 2, 2); }
+  }
+  const dx = x + (e.door.x - e.tx) * T;
+  const damaged = e.id === "b_shop" && !S.flags.repaired;
+  P(g, dx + 2, y + roofH + 6, "#4a2c18", 12, 26); P(g, dx + 3, y + roofH + 7, e.closed ? "#6b4226" : "#8b5a2b", 10, 25); P(g, dx + 10, y + roofH + 18, "#e0c040", 2, 2);
+  if (e.sign) { P(g, dx - 6, y + roofH - 9, "#5a3a20", 28, 9); P(g, dx - 5, y + roofH - 8, "#f4e9d0", 26, 7); drawTinyText(e.sign, dx - 3, y + roofH - 7); }
+  if (damaged) { P(g, x + 5, y + roofH + 20, "#7a6a50", 3, 1); P(g, x + 7, y + roofH + 21, "#7a6a50", 2, 1); P(g, x + w - 12, y + 8, e.roofDark, 6, 4); P(g, x + w - 11, y + 9, "#3a2a20", 3, 2); }
+}
+// 3×5 迷你像素字（看板用）
+const MINI = { S: "111100111001111", H: "101101111101101", O: "111101101101111", P: "111101111100100", T: "111010010010010", L: "100100100100111" };
+function drawTinyText(str, x, y) { let cx = x; for (const ch of str) { const m = MINI[ch]; if (m) for (let i = 0; i < 15; i++) if (m[i] === "1") P(g, cx + (i % 3), y + Math.floor(i / 3), "#5a2a10"); cx += 4; } }
+function drawNode(e, x, y) {
+  const ready = nodeReady(e);
+  switch (e.kind) {
+    case "tree":
+      if (!ready) { P(g, x + 4, y + 9, "#6b4226", 8, 6); P(g, x + 5, y + 9, "#c9a06a", 6, 2); P(g, x + 7, y + 9, "#8b5a2b", 2, 1); return; }
+      P(g, x + 6, y + 6, "#6b4226", 4, 10); circle(g, x + 8, y + 1, 8, "#2a6a30"); circle(g, x + 8, y, 7, "#3f8a45"); circle(g, x + 5, y - 3, 3, "#58a85e");
+      if (Math.sin(clock * 2 + e.tx) > 0.7) P(g, x + 11, y - 4, "#e8ffd0", 1, 1);
+      return;
+    case "bush":
+      circle(g, x + 8, y + 9, 7, "#2f7a3a"); circle(g, x + 7, y + 8, 5, "#3f8a45");
+      if (ready) for (const [a, b] of [[4, 7], [10, 6], [7, 11], [12, 10], [5, 12]]) { P(g, x + a, y + b, "#d23c5a", 2, 2); P(g, x + a, y + b, "#ff9aae", 1, 1); }
+      return;
+    case "herb":
+      if (!ready) { P(g, x + 7, y + 12, "#4aa35a", 2, 3); return; }
+      P(g, x + 7, y + 7, "#2f6b34", 2, 8); circle(g, x + 5, y + 9, 2, "#58b368"); circle(g, x + 11, y + 8, 2, "#4aa35a"); circle(g, x + 8, y + 5, 2, "#9be08a");
+      return;
+    case "flower":
+      P(g, x + 4, y + 10, "#3f8a45", 1, 5); P(g, x + 11, y + 9, "#3f8a45", 1, 6); P(g, x + 8, y + 11, "#3f8a45", 1, 4);
+      if (ready) { circle(g, x + 4, y + 9, 2, "#f08cb0"); circle(g, x + 11, y + 8, 2, "#f7e26b"); circle(g, x + 8, y + 10, 2, "#c88cf0"); P(g, x + 4, y + 9, "#fff"); P(g, x + 11, y + 8, "#fff"); }
+      return;
+    case "mushroom":
+      if (!ready) { P(g, x + 7, y + 13, "#d8c8b0", 2, 2); return; }
+      P(g, x + 6, y + 9, "#f2e6d0", 4, 6); circle(g, x + 8, y + 8, 5, "#d0342c"); P(g, x + 3, y + 9, "#d0342c", 11, 1); P(g, x + 5, y + 6, "#fff"); P(g, x + 10, y + 7, "#fff", 2, 1);
+      return;
+    case "hive":
+      P(g, x + 6, y - 2, "#5a3a20", 4, 18); circle(g, x + 8, y - 6, 8, "#24522a"); circle(g, x + 8, y - 7, 6, "#2f6b34");
+      if (ready) { P(g, x + 9, y + 2, "#e8a820", 6, 8); P(g, x + 9, y + 4, "#b07a10", 6, 1); P(g, x + 9, y + 7, "#b07a10", 6, 1); P(g, x + 11, y + 9, "#3a2210", 2, 1); if (Math.sin(clock * 8) > 0) P(g, x + 3, y + 3, "#2b1d14", 1, 1); }
+      return;
+    case "palm":
+      P(g, x + 7, y - 6, "#8b5a2b", 3, 22); P(g, x + 8, y - 6, "#a8763e", 1, 22); for (let k = 0; k < 4; k++) P(g, x + 7, y - 2 + k * 5, "#6b4226", 3, 1);
+      P(g, x - 3, y - 10, "#2f7a3a", 11, 3); P(g, x + 9, y - 10, "#2f7a3a", 11, 3); P(g, x + 1, y - 14, "#3f9a4f", 14, 4); P(g, x - 5, y - 7, "#2f7a3a", 5, 3); P(g, x + 16, y - 7, "#2f7a3a", 5, 3); P(g, x + 4, y - 16, "#58b368", 8, 2);
+      if (ready) { circle(g, x + 6, y - 5, 2, "#6b4226"); circle(g, x + 11, y - 5, 2, "#5a3a20"); }
+      return;
+    case "shell":
+      if (!ready) return;
+      for (let i = 0; i < 4; i++) P(g, x + 8 - i, y + 7 + i, "#f4c8b8", 1 + i * 2, 1);
+      P(g, x + 4, y + 11, "#e8a898", 9, 2); P(g, x + 6, y + 8, "#d88878", 1, 3); P(g, x + 10, y + 8, "#d88878", 1, 3);
+      if (Math.sin(clock * 3 + e.tx) > 0.85) P(g, x + 12, y + 6, "#ffffff");
+      return;
+    case "chest":
+      P(g, x + 2, y + 5, "#6b3a1a", 12, 10); P(g, x + 2, y + 5, "#8b5a2b", 12, 4); P(g, x + 2, y + 9, "#e0b040", 12, 1); P(g, x + 7, y + 8, "#ffe080", 2, 3);
+      if (!ready) { P(g, x + 2, y + 1, "#8b5a2b", 12, 4); P(g, x + 3, y + 5, "#2b1d14", 10, 2); }
+      else if (Math.sin(clock * 3 + e.tx) > 0.8) P(g, x + 13, y + 3, "#fff7a0", 1, 1);
+      return;
+  }
+}
+function drawPlot(e, x, y) {
+  if (!plotUnlocked(e.idx)) {   // 還沒開墾：木樁與繩子
+    P(g, x + 2, y + 4, "#8b5a2b", 2, 9); P(g, x + 12, y + 4, "#8b5a2b", 2, 9); P(g, x + 3, y + 6, "#d8c090", 10, 1);
+    return;
+  }
+  const p = S.farm[e.idx];
+  P(g, x, y, "#5a3a20", 16, 16); P(g, x + 1, y + 1, p.wet ? "#5a3a24" : "#9a6a3e", 14, 14);
+  for (const r of [4, 8, 12]) P(g, x + 2, y + r, p.wet ? "#432a18" : "#7a5230", 12, 1);
+  if (!p.c) return;
+  const grow = CROPS[p.c].grow, t = p.g / grow, stage = t >= 1 ? 3 : t >= 0.5 ? 2 : t >= 0.12 ? 1 : 0;
+  drawCrop(p.c, stage, x, y);
+  if (needsWater(p)) { const by = y - 10 + Math.round(Math.sin(clock * 4)); P(g, x + 4, by - 1, "#2b1d14", 9, 10); P(g, x + 5, by, "#fff", 7, 8); P(g, x + 7, by + 1, "#3a9ae8", 3, 1); P(g, x + 6, by + 2, "#3a9ae8", 5, 4); P(g, x + 7, by + 6, "#3a9ae8", 3, 1); }
+  else if (stage === 3 && Math.sin(clock * 4 + e.idx) > 0.5) { P(g, x + 13, y + 1, "#fff7a0", 1, 3); P(g, x + 12, y + 2, "#fff7a0", 3, 1); }
+}
+function drawCrop(kind, stage, x, y) {
+  if (stage === 0) { P(g, x + 4, y + 7, "#e8d8a0", 2, 2); P(g, x + 9, y + 9, "#e8d8a0", 2, 2); P(g, x + 7, y + 11, "#e8d8a0", 2, 2); return; }
+  if (stage === 1) { P(g, x + 7, y + 7, "#4aa35a", 2, 6); P(g, x + 5, y + 6, "#7ac86a", 2, 2); P(g, x + 9, y + 5, "#7ac86a", 2, 2); return; }
+  if (kind === "sunflower") {
+    P(g, x + 7, y - (stage === 3 ? 6 : 2), "#3f8a45", 2, stage === 3 ? 20 : 16); P(g, x + 9, y + 6, "#58b368", 3, 2); P(g, x + 4, y + 8, "#58b368", 3, 2);
+    if (stage === 3) { circle(g, x + 8, y - 7, 5, "#f2c230"); circle(g, x + 8, y - 7, 2, "#6b4226"); } else circle(g, x + 8, y - 3, 2, "#7ac86a");
+    return;
+  }
+  if (kind === "pumpkin") {
+    P(g, x + 3, y + 6, "#3f8a45", 10, 2); circle(g, x + 4, y + 5, 2, "#58b368"); circle(g, x + 12, y + 6, 2, "#58b368");
+    if (stage === 3) { circle(g, x + 8, y + 9, 6, "#e07a20"); P(g, x + 8, y + 4, "#b05a10", 1, 11); P(g, x + 5, y + 5, "#b05a10", 1, 9); P(g, x + 11, y + 5, "#b05a10", 1, 9); P(g, x + 7, y + 2, "#5a3a20", 2, 2); }
+    else circle(g, x + 8, y + 10, 3, "#9ac850");
+    return;
+  }
+  // 胡蘿蔔、番茄、草莓：長大的葉子＋成熟時露出果實
+  circle(g, x + 8, y + 7, stage === 3 ? 5 : 4, "#3f8a45"); circle(g, x + 7, y + 5, 2, "#58b368"); P(g, x + 7, y + 10, "#2f6b34", 2, 4);
+  if (stage < 3) return;
+  if (kind === "carrot") { P(g, x + 6, y + 11, "#e8822a", 4, 3); P(g, x + 7, y + 14, "#e8822a", 2, 1); }
+  if (kind === "tomato") for (const [a, b] of [[4, 6], [10, 7], [7, 10]]) { circle(g, x + a, y + b, 2, "#d8342c"); P(g, x + a - 1, y + b - 1, "#ff8a7a"); }
+  if (kind === "strawberry") for (const [a, b] of [[4, 9], [11, 9], [8, 12]]) { P(g, x + a - 1, y + b - 1, "#e0284a", 3, 3); P(g, x + a, y + b + 2, "#e0284a"); P(g, x + a, y + b, "#ffe080"); }
+}
+function drawShelf(e, x, y) {
+  const unlocked = slotUnlocked(e.slot);
+  P(g, x, y - 8, unlocked ? "#7a4a28" : "#6a5a4a", 16, 24); P(g, x, y - 8, unlocked ? "#a8683a" : "#857262", 16, 2);
+  P(g, x + 1, y - 6, unlocked ? "#3a2414" : "#4a4038", 14, 9); P(g, x + 1, y + 4, unlocked ? "#3a2414" : "#4a4038", 14, 9);
+  P(g, x + 1, y + 3, "#c98a50", 14, 1); P(g, x + 1, y + 13, "#c98a50", 14, 1);
+  if (!unlocked) { P(g, x + 3, y - 2, "#8a7a6a", 10, 1); P(g, x + 5, y + 8, "#8a7a6a", 6, 1); return; }
+  const sl = S.shelves[e.slot];
+  if (sl.item && sl.qty > 0) {   // 上下兩層，每層最多顯示 2 個
+    const ic = ICONS[sl.item], n = Math.min(sl.qty, 4);
+    for (let k = 0; k < n; k++) g.drawImage(ic, 0, 0, 16, 16, x + 1 + (k % 2) * 6, y - 7 + Math.floor(k / 2) * 10, 9, 9);
+  } else { P(g, x + 4, y - 1, "#5a3a20", 8, 1); }  // 空貨架
+}
+const RIDE_LIFT = { skate: 2, bike: 4, horse: 8 };
+function drawVehicle(kind, sx, sy, dir, moving, anim) {
+  const x = Math.round(sx), y = Math.round(sy), side = dir === "left" || dir === "right", f = dir === "left" ? -1 : 1;
+  const H = (px, py, col, w = 1, h = 1) => P(g, f < 0 ? x - px - w : x + px, y + py, col, w, h);
+  const step = moving ? Math.floor(anim * 10) % 2 : 0;
+  g.fillStyle = "#0003"; g.fillRect(x - 9, y - 1, 18, 2);
+  if (kind === "skate") {
+    if (side) { H(-8, -3, "#d04a4a", 16, 2); H(-8, -3, "#f08a6a", 16, 1); H(-6, -1, "#2b1d14", 2, 2); H(4, -1, "#2b1d14", 2, 2); }
+    else { P(g, x - 3, y - 8, "#d04a4a", 6, 9); P(g, x - 4, y - 7, "#2b1d14", 1, 2); P(g, x + 3, y - 7, "#2b1d14", 1, 2); P(g, x - 4, y - 1, "#2b1d14", 1, 2); P(g, x + 3, y - 1, "#2b1d14", 1, 2); }
+  } else if (kind === "bike") {
+    if (side) {
+      for (const ox of [-7, 7]) { circle(g, x + ox, y - 4, 4, "#2b1d14"); circle(g, x + ox, y - 4, 3, "#c8c8d0"); P(g, x + ox, y - 4, "#2b1d14"); }
+      H(-7, -9, "#3a7ad0", 13, 2); H(0, -9, "#3a7ad0", 2, 5); H(5, -13, "#2b1d14", 2, 5); H(5, -13, "#8a8a9a", 4, 1);
+    } else { P(g, x - 1, y - 9, "#2b1d14", 3, 10); P(g, x - 6, y - 13, "#8a8a9a", 12, 1); P(g, x - 2, y - 12, "#3a7ad0", 4, 3); }
+  } else if (kind === "horse") {
+    const legs = step ? [[-7, 0], [-3, 1], [3, 0], [6, 1]] : [[-6, 1], [-4, 0], [4, 1], [5, 0]];
+    if (side) {
+      for (const [lx, o] of legs) H(lx, -6 + o, "#6b4226", 2, 6 - o);
+      H(-9, -14, "#a0683a", 18, 8); H(-9, -14, "#b8804a", 18, 2); H(7, -21, "#a0683a", 5, 9); H(10, -19, "#a0683a", 3, 3); H(11, -18, "#2b1d14");
+      H(6, -22, "#5a3a20", 3, 8); H(-12, -13, "#5a3a20", 3, 7); H(-3, -15, "#d04a4a", 6, 2);
+    } else {
+      for (const [lx, o] of [[-4, step], [2, 1 - step]]) P(g, x + lx, y - 6 + o, "#6b4226", 2, 6 - o);
+      P(g, x - 5, y - 16, "#a0683a", 10, 11); P(g, x - 3, y - 15, "#d04a4a", 6, 2);
+      if (dir === "down") { P(g, x - 3, y - 22, "#a0683a", 6, 8); P(g, x - 2, y - 19, "#2b1d14"); P(g, x + 1, y - 19, "#2b1d14"); P(g, x - 1, y - 23, "#5a3a20", 2, 3); }
+      else P(g, x - 2, y - 7, "#5a3a20", 4, 5);
+    }
+  }
+}
+function drawSwing(cx, cy) {
+  const px = Math.round(player.x - cx), py = Math.round(player.y - cy - 8), [vx, vy] = DIRV[player.dir], k = 1 - swing / 0.2;
+  for (let i = 0; i < 6; i++) { const a = -1.1 + k * 2.2 * (i / 5); const r = 12; const ox = Math.round(vx * r * Math.cos(a) - vy * r * Math.sin(a)), oy = Math.round(vy * r * Math.cos(a) + vx * r * Math.sin(a)); P(g, px + ox, py + oy, i > 3 ? "#ffffff" : "#c8d8ff", 2, 2); }
+}
+function drawChar(look, x, y, dir, moving, anim, cx, cy) {
+  const frame = moving ? (Math.floor(anim * 8) % 2) + 1 : 0;
+  g.fillStyle = "#0003"; g.fillRect(Math.round(x - cx - 5), Math.round(y - cy - 2), 10, 2);
+  g.drawImage(charSprite(look, dir, frame), Math.round(x - cx - 8), Math.round(y - cy - 16 - (moving && frame === 1 ? 1 : 0)));
+}
+function drawShopDecor(cx, cy) {
+  const d = upVal("decor"), rep = S.flags.repaired, X = (tx) => tx * T - cx, Y = (ty) => ty * T - cy;
+  // 地毯
+  P(g, X(5) + 8, Y(8), rep ? "#b03a3a" : "#7a4a4a", 3 * T, 2 * T - 4);
+  P(g, X(5) + 10, Y(8) + 2, rep ? "#d8a040" : "#8a6a4a", 3 * T - 4, 1);
+  if (d >= 3) { P(g, X(5) + 8, Y(8), "#e8c050", 3 * T, 1); P(g, X(5) + 8, Y(10) - 5, "#e8c050", 3 * T, 1); for (let i = 0; i < 5; i++) P(g, X(5) + 14 + i * 8, Y(9) - 4, "#f0d890", 3, 3); }
+  if (rep) { // 窗戶與海報
+    for (const wx of [4, 9]) { P(g, X(wx) + 2, Y(1) + 2, "#6b4226", 14, 12); P(g, X(wx) + 3, Y(1) + 3, "#9ad0f0", 12, 10); P(g, X(wx) + 9, Y(1) + 3, "#6b4226", 1, 10); P(g, X(wx) + 4, Y(1) + 4, "#e0f4ff", 3, 2); }
+    P(g, X(7) + 2, Y(1) + 3, "#f4e9d0", 10, 12); P(g, X(7) + 4, Y(1) + 5, "#d04a4a", 6, 4); P(g, X(7) + 4, Y(1) + 11, "#3a7ad0", 6, 1);
+  } else { // 破舊：蜘蛛網
+    P(g, X(1), Y(1), "#d8d8d8", 6, 1); P(g, X(1), Y(1), "#d8d8d8", 1, 6); P(g, X(1) + 1, Y(1) + 4, "#d8d8d8", 4, 1);
+  }
+  if (d >= 1) for (const [tx, ty] of [[1, 9], [14, 9]]) { P(g, X(tx) + 5, Y(ty) + 8, "#a0583a", 6, 6); circle(g, X(tx) + 8, Y(ty) + 6, 4, "#3f8a45"); P(g, X(tx) + 7, Y(ty) + 2, "#f08cb0", 2, 2); }
+  if (d >= 2) for (const tx of [3, 12]) { const glow = 0.25 + 0.1 * Math.sin(clock * 3); P(g, X(tx) + 6, Y(1) + 4, "#5a3a20", 4, 3); P(g, X(tx) + 5, Y(1) + 7, "#ffe080", 6, 4); g.fillStyle = `rgba(255,220,120,${glow})`; g.fillRect(X(tx) - 2, Y(1) + 4, 20, 18); }
+}
+let fx = [], tapMark = null;
+const cam = { x: 0, y: 0 };
+function popAt(x, y, iconName, text) { fx.push({ k: "pop", sc: scene && scene.name, x, y, t: 0, life: 1.3, icon: iconName, text }); }
+function burst(x, y, col) { for (let i = 0; i < 10; i++) { const a = rand() * Math.PI * 2, s = 25 + rand() * 35; fx.push({ k: "dot", sc: scene && scene.name, x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 25, t: 0, life: 0.45 + rand() * 0.3, col }); } }
+function updateFx(dt) {
+  for (const f of fx) { f.t += dt; if (f.k === "dot") { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += 90 * dt; } }
+  fx = fx.filter((f) => f.t < f.life);
+  if (tapMark) { tapMark.t += dt; if (tapMark.t > 0.8) tapMark = null; }
+  if (shakeT > 0) shakeT -= dt;
+}
+/* ---- 路上的村民：在家附近散步，晚上回家 ---- */
+function walkerFree(x, y) {
+  for (const [ox, oy] of [[-4, -4], [4, -4], [-4, -1], [4, -1]]) {
+    const tx = Math.floor((x + ox) / T), ty = Math.floor((y + oy) / T);
+    if (tx < 0 || ty < 0 || tx >= scene.w || ty >= scene.h || scene.solid[ty * scene.w + tx]) return false;
+    if (scene.warps.some((w) => tx >= w.x && tx < w.x + w.w && ty >= w.y && ty < w.y + w.h)) return false;
+  }
+  return Math.hypot(x - player.x, y - player.y) > 9;
+}
+function updateWalkers(dt) {
+  for (const e of scene.ents) {
+    if (!e.walker) continue;
+    if (e.wait > 0) { e.wait -= dt; e.moving = false; }
+    else if (!e.goal) {
+      for (let k = 0; k < 10 && !e.goal; k++) {
+        const gx = e.home.x + randInt(-5, 5), gy = e.home.y + randInt(-3, 3);
+        if (gx >= 0 && gy >= 0 && gx < scene.w && gy < scene.h && !scene.solid[gy * scene.w + gx]) e.goal = { x: gx * T + 8, y: gy * T + 12 };
+      }
+      if (!e.goal) e.wait = 1;
+    } else {
+      const dx = e.goal.x - e.px, dy = e.goal.y - e.py, sp = 24 * dt;
+      let mx = 0, my = 0;
+      if (Math.abs(dx) > 1) mx = Math.sign(dx) * Math.min(sp, Math.abs(dx)); else if (Math.abs(dy) > 1) my = Math.sign(dy) * Math.min(sp, Math.abs(dy));
+      if (!mx && !my) { e.goal = null; e.wait = 1.5 + rand() * 3; e.moving = false; }
+      else if (walkerFree(e.px + mx, e.py + my)) { e.px += mx; e.py += my; e.moving = true; e.anim = (e.anim || 0) + dt; e.dir = mx ? (mx > 0 ? "right" : "left") : (my > 0 ? "down" : "up"); }
+      else { e.goal = null; e.wait = 0.6 + rand(); e.moving = false; }
+    }
+    e.tx = (e.px - 8) / T; e.ty = (e.py + 4) / T - 1;
+  }
+}
+function drawTool(cx, cy) {
+  const px = Math.round(player.x - cx), py = Math.round(player.y - cy);
+  const up = (action.t % action.step) < action.step * 0.45, d = player.dir, side = d === "left" ? -1 : 1;
+  let hx, hy;
+  if (d === "left" || d === "right") { hx = px + side * (up ? 2 : 8); hy = py - (up ? 19 : 12); }
+  else if (d === "up") { hx = px + 5; hy = py - (up ? 23 : 17); }
+  else { hx = px + 6; hy = py - (up ? 16 : 9); }
+  P(g, hx, hy, "#7a4a28", 2, 8);
+  const ax = hx + (side > 0 ? 0 : -2);
+  P(g, ax, hy - 1, "#9aa0ae", 4, 4); P(g, ax, hy - 1, "#e8ecf4", 4, 1);
+}
+function drawFx(cx, cy) {
+  for (const f of fx) {
+    if (f.sc !== scene.name) continue;
+    if (f.k === "dot") { P(g, Math.round(f.x - cx), Math.round(f.y - cy), f.col, 2, 2); continue; }
+    if (f.k === "arrow") { const k = f.t / f.life, ax = f.x + (f.x1 - f.x) * k - cx, ay = f.y + (f.y1 - f.y) * k - cy, d = Math.hypot(f.x1 - f.x, f.y1 - f.y) || 1; for (let i = 0; i < 6; i++) P(g, Math.round(ax - (f.x1 - f.x) / d * i), Math.round(ay - (f.y1 - f.y) / d * i), i ? "#8b5a2b" : "#e8ecf4", 1, 1); continue; }
+    const yy = Math.round(f.y - cy - 4 - f.t * 16), xx = Math.round(f.x - cx);
+    g.globalAlpha = 1 - Math.max(0, (f.t - 0.9) / 0.4);
+    g.drawImage(ICONS[f.icon], xx - 13, yy - 9, 12, 12);
+    g.font = "bold 9px sans-serif"; g.textAlign = "left";
+    g.fillStyle = "#2b1d14"; g.fillText(f.text, xx + 1, yy + 2); g.fillStyle = "#fff"; g.fillText(f.text, xx, yy + 1);
+    g.globalAlpha = 1;
+  }
+}
+function render() {
+  let cx = clamp(Math.round(player.x - VW / 2), 0, Math.max(0, scene.w * T - VW)) - (scene.w * T < VW ? Math.floor((VW - scene.w * T) / 2) : 0);
+  let cy = clamp(Math.round(player.y - 8 - VH / 2), 0, Math.max(0, scene.h * T - VH)) - (scene.h * T < VH ? Math.floor((VH - scene.h * T) / 2) : 0);
+  if (shakeT > 0) { cx += rand() < 0.5 ? -1 : 1; cy += rand() < 0.5 ? -1 : 1; }
+  cam.x = cx; cam.y = cy;
+  g.fillStyle = scene.name === "shop" ? "#1a1410" : "#24522a"; g.fillRect(0, 0, VW, VH);
+  const x0 = Math.max(0, Math.floor(cx / T)), y0 = Math.max(0, Math.floor(cy / T));
+  const x1 = Math.min(scene.w - 1, Math.floor((cx + VW) / T)), y1 = Math.min(scene.h - 1, Math.floor((cy + VH) / T));
+  const wf = Math.floor(clock * 2) % 2;
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+    let t = scene.tiles[ty * scene.w + tx];
+    if (t === TILE.FLOOR && scene.name === "shop" && !S.flags.repaired && (tx * 7 + ty * 3) % 11 === 0) { g.drawImage(tileImgs[TILE.FLOOR][1], tx * T - cx, ty * T - cy); continue; }
+    const v = tileImgs[t]; const img = t === TILE.WATER ? v[wf] : t === TILE.FLOOR ? v[0] : v[(tx * 31 + ty * 17) % v.length];
+    g.drawImage(img, tx * T - cx, ty * T - cy);
+  }
+  if (scene.name === "shop") drawShopDecor(cx, cy);
+  const list = [];
+  for (const e of scene.ents) list.push({ y: e.type === "plot" || e.type === "dock" ? e.ty * T : (e.ty + e.h) * T, e });   // 田地與碼頭貼地，角色可以站在上面
+  for (const c of customers) list.push({ y: c.y, c });
+  if (raid && scene.name === "village") for (const a of raid.animals) list.push({ y: a.y, a });
+  list.push({ y: player.y, p: true });
+  list.sort((a, b) => a.y - b.y);
+  for (const it of list) {
+    if (it.p) {
+      const ride = S.ride && scene.outdoor ? S.ride : null;
+      if (ride) { drawVehicle(ride, player.x - cx, player.y - cy, player.dir, player.moving, player.anim); drawChar(S.look, player.x, player.y - RIDE_LIFT[ride], player.dir, false, 0, cx, cy); }
+      else drawChar(S.look, player.x, player.y, player.dir, player.moving, player.anim, cx, cy);
+      if (action && action.tree) drawTool(cx, cy);
+      if (swing > 0) drawSwing(cx, cy);
+    }
+    else if (it.a) drawAnimal(it.a, cx, cy);
+    else if (it.c) {
+      const c = it.c; drawChar(c.look, c.x, c.y, c.dir, c.moving && c.wait <= 0, c.anim, cx, cy);
+      if (c.wish && (c.phase === "in" || c.phase === "look")) { const bx = Math.round(c.x - cx), by = Math.round(c.y - cy - 24); P(g, bx - 8, by - 8, "#2b1d14", 16, 15); P(g, bx - 7, by - 7, "#fff", 14, 13); P(g, bx - 1, by + 7, "#2b1d14", 3, 2); g.drawImage(ICONS[c.wish], bx - 6, by - 6, 12, 12); }
+      else if (c.bubble) bubble(c.bubble, c.x - cx, c.y - cy - 22);
+    }
+    else drawEnt(it.e, cx, cy);
+  }
+  drawFx(cx, cy);
+  if (tapMark) { const k = tapMark.t; P(g, tapMark.x * T + 4 - cx, tapMark.y * T + 10 - cy, `rgba(255,255,255,${Math.max(0, 0.8 - k)})`, 8, 3); }
+  // 互動目標提示
+  if (currentTarget && !modalOpen()) { const c = entCenter(currentTarget); const bx = Math.round(c.x - cx), by = Math.round(currentTarget.ty * T - cy - 6 - (currentTarget.type === "building" ? 0 : 2) + Math.sin(clock * 6)); P(g, bx - 1, by - 3, "#fff", 3, 3); P(g, bx, by, "#fff", 1, 2); }
+  // 日夜
+  const h = minOfDay() / 60;
+  let dark = 0, warm = 0;
+  if (h >= 17 && h < 19) { warm = (h - 17) / 2 * 0.18; dark = (h - 17) / 2 * 0.2; }
+  else if (h >= 19 && h < 21) { warm = 0.18 * (1 - (h - 19) / 2); dark = 0.2 + (h - 19) / 2 * 0.3; }
+  else if (h >= 21 || h < 5) dark = 0.5;
+  else if (h >= 5 && h < 6) dark = 0.5 * (6 - h);
+  if (!scene.outdoor) { dark *= 0.4; warm *= 0.5; }
+  if (warm) { g.fillStyle = `rgba(255,120,40,${warm})`; g.fillRect(0, 0, VW, VH); }
+  if (dark) { g.fillStyle = `rgba(16,20,60,${dark})`; g.fillRect(0, 0, VW, VH); }
+  if (scene.name === "forest" && dark > 0.3) for (let i = 0; i < 18; i++) { const fx = ((i * 97 + clock * 9 * (i % 3 + 1)) % (scene.w * T)) - cx, fy = ((i * 53 + Math.sin(clock + i) * 20) % (scene.h * T)) - cy; if (Math.sin(clock * 3 + i) > 0) P(g, Math.round(fx), Math.round(fy), "#f8f080", 1, 1); }
+  // 目標箭頭
+  const ap = arrowPoint();
+  if (ap) {
+    let ax = ap.x - cx, ay = ap.y - cy - 4 + Math.round(Math.sin(clock * 5) * 2);
+    const m = 12, on = ax >= m && ax <= VW - m && ay >= m + 24 && ay <= VH - m;
+    if (on) { drawArrowDown(ax, ay); }
+    else {
+      const px = player.x - cx, py = player.y - 8 - cy, ang = Math.atan2(ap.y - cy - py, ap.x - cx - px);
+      ax = clamp(px + Math.cos(ang) * 1000, m, VW - m); ay = clamp(py + Math.sin(ang) * 1000, m + 24, VH - m);
+      g.save(); g.translate(Math.round(ax), Math.round(ay)); g.rotate(ang); g.fillStyle = "#2b1d14"; g.beginPath(); g.moveTo(8, 0); g.lineTo(-6, -7); g.lineTo(-6, 7); g.fill(); g.fillStyle = "#ffd84a"; g.beginPath(); g.moveTo(6, 0); g.lineTo(-4, -5); g.lineTo(-4, 5); g.fill(); g.restore();
+    }
+  }
+}
+function drawArrowDown(x, y) { x = Math.round(x); y = Math.round(y); P(g, x - 5, y - 9, "#2b1d14", 11, 2); for (let i = 0; i < 6; i++) P(g, x - 5 + i, y - 8 + i, "#2b1d14", 11 - i * 2, 1); for (let i = 0; i < 5; i++) P(g, x - 4 + i, y - 8 + i, "#ffd84a", 9 - i * 2, 1); }
+function bubble(text, x, y) { x = Math.round(x); y = Math.round(y); P(g, x - 7, y - 6, "#2b1d14", 14, 11); P(g, x - 6, y - 5, "#fff", 12, 9); P(g, x - 1, y + 5, "#2b1d14", 3, 2); g.fillStyle = "#2b1d14"; g.font = "8px sans-serif"; g.textAlign = "center"; g.fillText(text, x, y + 2); }
+
+/* ---------------- 主迴圈 ---------------- */
+let last = performance.now(), saveTimer = 0, hudTimer = 0;
+const paused = () => !S || modalOpen() || fading || document.hidden || !$("title").hidden;
+function update(dt) {
+  clock += dt;
+  if (paused()) { player.moving = false; return; }
+  const prevDay = gameDay();
+  S.min += dt * MIN_PER_SEC;
+  growFarm(dt * MIN_PER_SEC);
+  if (gameDay() !== prevDay) { ensureDaily(); toast(`第 ${gameDay() + 1} 天開始了！每日任務已更新`, "gold"); }
+  updateFx(dt);
+  updateWalkers(dt);
+  updateRaid(dt); updateChatter(dt);
+  if (attackCd > 0) attackCd -= dt; if (swing > 0) swing -= dt;
+  const busy = updateAction(dt);
+  const riding = S.ride && scene.outdoor ? VEHICLES[S.ride] : null;
+  let v = busy ? { x: 0, y: 0 } : input.vec(), lim = Infinity; const sp = 64 * (1 + upVal("shoes") + (riding ? riding.speed : 0));
+  if (busy) { /* 採集動作中不能移動 */ }
+  else if (v.x || v.y) { walkPath = null; walkTarget = null; }
+  else if (walkPath) {
+    if (!walkPath.length) { arrive(); return; }
+    const wp = walkPath[0], dx = wp.x - player.x, dy = wp.y - player.y, d = Math.hypot(dx, dy);
+    if (d < 1.5) { player.x = wp.x; player.y = wp.y; walkPath.shift(); walkStuck = 0; }
+    else {
+      v = { x: dx / d, y: dy / d }; lim = d;
+      walkStuck += dt; if (walkStuck > 1.2) { walkPath = null; walkTarget = null; walkStuck = 0; }
+    }
+  }
+  player.moving = v.x !== 0 || v.y !== 0;
+  if (player.moving) {
+    player.anim += dt;
+    if (Math.abs(v.x) > Math.abs(v.y)) player.dir = v.x > 0 ? "right" : "left"; else player.dir = v.y > 0 ? "down" : "up";
+    const stepLen = Math.min(sp * dt, lim);
+    const nx = player.x + v.x * stepLen; if (!blocked(nx, player.y)) player.x = nx;
+    const ny = player.y + v.y * stepLen; if (!blocked(player.x, ny)) player.y = ny;
+    player.stepT += dt; if (player.stepT > (riding ? 0.5 : 0.32)) { player.stepT = 0; Sound.sfx("step"); }
+    markDirty();
+    for (const w of scene.warps) {
+      if (player.x >= w.x * T && player.x <= (w.x + w.w) * T && player.y - 4 >= w.y * T && player.y - 4 <= (w.y + w.h) * T) {
+        Sound.sfx("door");
+        fade(() => { enterScene(w.to, w.tx, w.ty, w.dir); writeSave(); });
+        break;
+      }
+    }
+  }
+  updateCustomers(dt);
+  currentTarget = findTarget();
+  saveTimer += dt; if (saveTimer > 10) { saveTimer = 0; if (dirty) writeSave(); }
+  cloudTimer += dt; if (cloudTimer > 180 && cloudDirty && cloudOn()) { S.x = player.x; S.y = player.y; S.dir = player.dir; writeSave(); cloudSave(); }   // 每 3 分鐘上傳一次
+}
+/* ---------------- 點擊移動（點地面走過去；點人物或物件會走到旁邊並互動） ---------------- */
+let walkPath = null, walkTarget = null, walkStuck = 0;
+const walkable = (x, y) => x >= 0 && y >= 0 && x < scene.w && y < scene.h && !scene.solid[y * scene.w + x];
+function adjacentGoals(e) {
+  const out = [], ex = Math.round(e.tx), ey = Math.round(e.ty);
+  for (let y = ey - 1; y <= ey + e.h; y++) for (let x = ex - 1; x <= ex + e.w; x++) {
+    const inX = x >= ex && x < ex + e.w, inY = y >= ey && y < ey + e.h;
+    if ((inX && inY) || (!inX && !inY)) continue;   // 排除自己與斜角
+    if (walkable(x, y)) out.push([x, y]);
+  }
+  if (!e.solid) out.push([ex, ey]);
+  return out;
+}
+function findPath(goals) {
+  const W = scene.w, sx = Math.floor(player.x / T), sy = Math.floor((player.y - 3) / T), start = sy * W + sx;
+  const goalSet = new Set(goals.filter(([x, y]) => walkable(x, y) || (x === sx && y === sy)).map(([x, y]) => y * W + x));
+  if (!goalSet.size) return null;
+  const prev = new Int32Array(W * scene.h).fill(-2); prev[start] = -1;
+  const q = [start];
+  for (let qi = 0; qi < q.length; qi++) {
+    const cur = q[qi];
+    if (goalSet.has(cur)) {
+      const p = []; for (let c = cur; c !== -1; c = prev[c]) p.push(c);
+      return p.reverse().slice(1).map((i) => ({ x: (i % W) * T + 8, y: Math.floor(i / W) * T + 12 }));
+    }
+    const x = cur % W, y = (cur / W) | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy; if (!walkable(nx, ny)) continue;
+      const ni = ny * W + nx; if (prev[ni] !== -2) continue; prev[ni] = cur; q.push(ni);
+    }
+  }
+  return null;
+}
+function arrive() {
+  const e = walkTarget; walkPath = null; walkTarget = null; player.moving = false;
+  if (!e) return;
+  const c = entCenter(e), dx = c.x - player.x, dy = c.y - (player.y - 6);
+  player.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+  currentTarget = e; interact(e);
+}
+cv.addEventListener("pointerdown", (ev) => {
+  if (!S || !scene || paused()) return;
+  Sound.init(); Sound.startMusic();
+  const wx = ev.clientX / scale + cam.x, wy = ev.clientY / scale + cam.y;
+  const tx = Math.floor(wx / T), ty = Math.floor(wy / T);
+  if (raid && scene.name === "village") {
+    const a = raid.animals.find((a) => a.delay <= 0 && a.state !== "flee" && Math.abs(a.x - wx) < 13 && wy - a.y < 6 && a.y - wy < 26);
+    if (a) {
+      const range = S.weapon ? WEAPONS[S.weapon].range : 22;
+      if (Math.hypot(a.x - player.x, a.y - player.y) <= range + 6) { attackAnimal(a); return; }
+      const ax = Math.floor(a.x / T), ay = Math.floor((a.y - 3) / T);
+      const path = findPath([[ax, ay], [ax - 1, ay], [ax + 1, ay], [ax, ay - 1], [ax, ay + 1]]);
+      if (path) { walkPath = path; walkTarget = null; walkStuck = 0; }
+      return;
+    }
+  }
+  let ent = null;
+  for (const e of scene.ents) {
+    if (!INTERACTIVE.has(e.type) || !entVisible(e)) continue;
+    const top = e.ty - (e.type === "npc" || e.type === "shelf" || (e.type === "node" && (e.kind === "tree" || e.kind === "hive" || e.kind === "palm")) ? 1 : 0);
+    if (tx >= e.tx && tx < e.tx + e.w && ty >= top && ty < e.ty + e.h) { ent = e; break; }
+  }
+  if (ent && ent === currentTarget) { interact(ent); return; }
+  const path = findPath(ent ? adjacentGoals(ent) : [[tx, ty]]);
+  if (!path) return;
+  walkPath = path; walkTarget = ent; walkStuck = 0; tapMark = ent ? null : { x: tx, y: ty, t: 0 };
+});
+
+function updateHud() {
+  if (!S) return;
+  $("hud-coins").textContent = S.coins;
+  $("hud-time").textContent = timeLabel() + (shopOpen() ? "・營業中" : "・打烊");
+  $("hud-bag").textContent = `背包 ${invCount()}/${capacity()}`;
+  const ob = $("objective"); const txt = objectiveText(), hint = objectiveHint(), key = txt + "|" + hint;
+  if (ob.dataset.t !== key) { ob.dataset.t = key; ob.innerHTML = `<small>目標</small>${esc(txt)}<span class="ob-hint">提示：${esc(hint)}</span>`; }
+  $("alarm").hidden = !raid; ob.classList.toggle("raid", Boolean(raid));
+  const a = $("btn-a"); a.classList.toggle("dim", !currentTarget);
+  const lbl = targetLabel(currentTarget); if ($("btn-a-label").textContent !== lbl) $("btn-a-label").textContent = lbl;
+}
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (S && scene) { update(dt); render(); updateSpeeches(paused() ? 0 : dt); hudTimer += dt; if (hudTimer > 0.2) { hudTimer = 0; updateHud(); } }
+  requestAnimationFrame(loop);
+}
+
+/* ---------------- 開始／登出 ---------------- */
+function showGameUI(on) { for (const id of ["hud", "objective", "menu-btns", "joy-zone", "btn-a"]) $(id).hidden = !on; if (!on) { raid = null; $("alarm").hidden = true; for (const sp of speeches) sp.el.remove(); speeches.length = 0; } }
+function startGame(save) {
+  S = save;
+  // 舊存檔補欄位
+  const base = newSave(S.seat, S.look);
+  for (const k of Object.keys(base)) if (S[k] === undefined) S[k] = base[k];
+  for (const k of Object.keys(UPGRADES)) if (!S.up[k]) S.up[k] = 1;
+  while (S.farm.length < FARM_PLOTS) S.farm.push({ c: null, g: 0, wet: false, dry: false });
+  scenes.village = buildVillage(); scenes.forest = buildForest(); scenes.shop = buildShop(); scenes.beach = buildBeach(); applyFlags();
+  raid = null; speeches.length = 0; $("bubbles").innerHTML = "";
+  ensureDaily();
+  enterScene(S.scene in scenes ? S.scene : "village", S.x / T, S.y / T, S.dir);
+  if (blocked(player.x, player.y)) { const sp = scene.spawn; player.x = sp.tx * T; player.y = sp.ty * T; }
+  $("title").hidden = true; showGameUI(true); resize();
+  Sound.init(); Sound.apply(); Sound.startMusic();
+  writeSave();
+  if (S.main.step === 0) {
+    const go = () => setTimeout(() => toast("走到村長身邊（黃色箭頭），按右下角的按鈕說話", "gold"), 300);
+    if (!S.flags.helpSeen) { S.flags.helpSeen = true; writeSave(); setTimeout(() => openHelp(0, go), 400); } else go();
+  }
+}
+async function logout() {
+  S.x = player.x; S.y = player.y; S.dir = player.dir; writeSave();
+  if (cloudOn()) {
+    openModal(`<h2>存檔中…</h2><p class="say">正在把進度存到雲端，請稍等。</p>`);
+    const ok = await cloudSave();
+    if (!ok && !confirm("沒辦法存到雲端（可能沒有網路）。\n進度仍保存在這台平板上，下次換平板會看不到。\n\n要繼續登出嗎？")) { closeModal(); return; }
+  }
+  closeModal(); S = null; scene = null; showGameUI(false); input.reset();
+  $("title").hidden = false; $("seat").value = ""; renderSaves();
+}
+function renderSaves() {
+  const saves = listSaves();
+  $("saves").innerHTML = saves.length ? `<h4>這台平板上的存檔（點一下繼續玩）</h4><div class="save-grid">${saves.slice(0, 9).map((s) =>
+    `<button class="save-chip" data-seat="${esc(s.seat)}"><b>座號 ${esc(s.seat)}</b><span>第 ${Math.floor(s.min / DAY) + 1} 天・${s.coins} 金</span></button>`).join("")}</div>` : "";
+  $("saves").querySelectorAll("[data-seat]").forEach((b) => b.addEventListener("click", () => { $("seat").value = b.dataset.seat; begin(); }));
+}
+let beginning = false;
+async function begin() {
+  Sound.init();
+  if (beginning) return;
+  const raw = $("seat").value.trim();
+  if (!/^\d{1,2}$/.test(raw) || Number(raw) < 1) { $("title-err").textContent = "請輸入 1～99 的座號"; return; }
+  $("title-err").textContent = "";
+  const seat = String(Number(raw)).padStart(2, "0");
+  const local = loadSave(seat);
+  let cloud = null;
+  if (cloudOn()) {
+    beginning = true; $("start-btn").disabled = true; $("start-btn").textContent = "讀取存檔…";
+    try { cloud = await cloudLoad(seat); }
+    catch { $("title-err").textContent = "連不上雲端存檔，先使用這台平板上的進度"; await new Promise((r) => setTimeout(r, 1200)); }
+    beginning = false; $("start-btn").disabled = false; $("start-btn").textContent = "開始冒險";
+  }
+  // 平板上的與雲端的存檔，用比較新的那一份
+  const existing = [local, cloud].filter((s) => s && s.seat === seat).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
+  if (existing) return startGame(existing);
+  $("title").hidden = true;
+  chooseLook(null, (look) => startGame(newSave(seat, look)));
+}
+$("start-btn").addEventListener("click", begin);
+$("seat").addEventListener("keydown", (ev) => { if (ev.key === "Enter") begin(); });
+$("fs-btn").addEventListener("click", toggleFullscreen);
+const persist = () => { if (S && scene) { S.x = player.x; S.y = player.y; S.dir = player.dir; writeSave(); } };
+document.addEventListener("visibilitychange", () => { if (document.hidden) { persist(); input.reset(); if (S && cloudDirty) cloudSave(true); } });
+addEventListener("pagehide", () => { persist(); if (S && cloudDirty) cloudSave(true); });
+
+/* ---------------- 標題插圖 ---------------- */
+function drawTitleArt() {
+  const t = $("title-art").getContext("2d"); t.imageSmoothingEnabled = false;
+  const R = (x, y, c, w = 1, h = 1) => { t.fillStyle = c; t.fillRect(x, y, w, h); };
+  const sky = t.createLinearGradient(0, 0, 0, 44); sky.addColorStop(0, "#6eb4ee"); sky.addColorStop(1, "#cfe9ff"); t.fillStyle = sky; t.fillRect(0, 0, 160, 64);
+  for (const [x, y] of [[14, 9], [104, 5], [62, 13]]) { R(x, y, "#fff", 20, 4); R(x + 4, y - 3, "#fff", 11, 3); R(x + 2, y + 4, "#e4f2ff", 16, 1); }
+  for (let x = 0; x < 160; x++) { const h = 40 - Math.round(5 * Math.sin(x / 17) + 3 * Math.sin(x / 6.5)); R(x, h, "#8ccf7a", 1, 64 - h); }
+  for (let x = 0; x < 160; x += 16) t.drawImage(tileImgs[TILE.GRASS][(x / 16) % 4], x, 48);
+  for (let x = 48; x < 112; x += 16) t.drawImage(tileImgs[TILE.PATH][0], x, 56);
+  t.drawImage(tileImgs[TILE.TREE][0], 2, 34); t.drawImage(tileImgs[TILE.TREE][1], 16, 40); t.drawImage(tileImgs[TILE.TREE][0], 144, 36);
+  // 小商店
+  const bx = 52, bw = 56;
+  for (let i = 0; i < 16; i++) { const inset = Math.max(0, 5 - Math.floor(i / 2)); R(bx - 4 + inset, 14 + i, i % 6 < 3 ? "#b04a3a" : "#7e2f24", bw + 8 - inset * 2, 1); }
+  R(bx - 4, 29, "#2b1d14", bw + 8, 1);
+  R(bx, 30, "#efe0c0", bw, 22); R(bx, 50, "#a08a68", bw, 2);
+  R(bx + 6, 35, "#6b4226", 12, 10); R(bx + 7, 36, "#8ec5e8", 10, 8); R(bx + 38, 35, "#6b4226", 12, 10); R(bx + 39, 36, "#8ec5e8", 10, 8);
+  R(bx + 22, 34, "#4a2c18", 12, 18); R(bx + 23, 35, "#8b5a2b", 10, 17); R(bx + 31, 43, "#e0c040", 1, 2);
+  R(bx + 16, 22, "#5a3a20", 24, 8); R(bx + 17, 23, "#f4e9d0", 22, 6);
+  let tx = bx + 20; for (const ch of "SHOP") { const m = MINI[ch]; for (let i = 0; i < 15; i++) if (m[i] === "1") R(tx + (i % 3), 24 + Math.floor(i / 3), "#5a2a10"); tx += 4; }
+  // 角色
+  t.drawImage(charSprite({ hair: "#e8e8e8", shirt: "#3f8a5a", pants: "#5a4a3a" }, "right", 0), 32, 41);
+  t.drawImage(charSprite({ hair: "#6b3a1a", shirt: "#3a7ad0" }, "down", 0), 112, 42);
+  t.drawImage(FOX, 128, 44);
+  t.drawImage(ICONS.berry, 96, 50, 9, 9); t.drawImage(ICONS.wood, 44, 52, 9, 9); t.drawImage(ICONS.coin, 104, 50, 8, 8);
+}
+
+/* ---------------- 老師專區 ---------------- */
+function sourceText() {
+  const t = (ms) => (ms ? new Date(ms).toLocaleString() : "");
+  if (wordSource.kind === "sheet") return `已讀取 Google 試算表（${t(wordSource.at)}）`;
+  if (wordSource.kind === "cache") return `使用這台平板上次讀到的試算表單字（${t(wordSource.at)}）${wordSource.error ? `。這次讀取失敗：${wordSource.error}` : ""}`;
+  return SHEET_URL ? `讀不到試算表，暫時使用內建的示範單字${wordSource.error ? `（${wordSource.error}）` : ""}` : "還沒連接 Google 試算表，目前使用內建的示範單字";
+}
+function updateWordStatus() {
+  $("word-status").textContent = `單字：${wordSource.kind === "builtin" ? "示範單字" : "Google 試算表"}・本週 ${currentLabel()}・共 ${VOCAB.length} 個${wordSource.problems.length ? `・有 ${wordSource.problems.length} 個地方要修正（見老師專區）` : ""}`;
+}
+const csvCell = (s) => (/[",\r\n]/.test(s) ? `"${String(s).replace(/"/g, '""')}"` : s);
+function downloadTemplate() {
+  const lines = ["單元,英文,中文,本週", ...VOCAB.map((w) => [w.unit, w.en, w.zh, CURRENT_UNITS.has(w.unit) ? "V" : ""].map(csvCell).join(","))];
+  const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "english-adventure-shop-單字範本.csv";
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function openTeacher() {
+  const units = [...new Set(VOCAB.map((w) => w.unit))];
+  const unitRows = units.map((u) => `<tr><td>${esc(u)}${CURRENT_UNITS.has(u) ? " <b>（本週）</b>" : ""}</td><td>${VOCAB.filter((w) => w.unit === u).length} 個單字</td></tr>`).join("");
+  const wordRows = VOCAB.map((w) => `<tr><td>${esc(w.unit)}</td><td>${esc(w.en)}</td><td>${esc(w.zh)}</td></tr>`).join("");
+  const probs = wordSource.problems;
+  openModal(`${closeBtn}<h2>老師專區</h2>
+    <div class="row"><div class="grow"><div class="t">${esc(sourceText())}</div><div class="d">本週單元：${esc(currentLabel())}・共 ${VOCAB.length} 個單字</div></div></div>
+    ${probs.length ? `<h3>需要修正</h3>${probs.map((p) => `<p class="problem">・${esc(p)}</p>`).join("")}` : `<p class="muted">單字檢查：沒有發現問題</p>`}
+    <div class="btn-row" style="margin-top:10px"><button class="btn" data-act="reload" ${SHEET_URL ? "" : "disabled"}>重新讀取試算表</button><button class="btn alt" data-act="tpl">下載單字範本（CSV）</button></div>
+    <h3>各單元</h3><table class="words">${unitRows}</table>
+    <h3>用 Google 試算表管理單字（只需設定一次）</h3>
+    <ol class="steps">
+      <li>按上面的「下載單字範本」（或用遊戲旁邊的 english-adventure-shop-單字範本.csv）。</li>
+      <li>打開 Google 試算表 → 建立空白試算表 → 檔案 → 匯入 → 上傳範本 →「取代目前的工作表」。</li>
+      <li>A 欄單元、B 欄英文、C 欄中文；本週要練的單元，在 D 欄「本週」打 V。舊單元請留著，遊戲會拿來複習。</li>
+      <li>右上角「共用」→ 一般存取權改成「知道連結的任何人」（檢視者）→ 複製連結。</li>
+      <li>把連結交給 Claude 幫你設定（或用記事本貼到遊戲檔最上方的 SHEET_URL）。</li>
+    </ol>
+    <p class="muted">之後換單字只要改試算表，存檔後學生重新整理遊戲就會用新單字；沒有網路時，使用這台平板上次讀到的單字。注意：只有第一個分頁（連結中的那個工作表）會被讀取。</p>
+    <h3>目前的單字</h3><table class="words"><tr><th>單元</th><th>英文</th><th>中文</th></tr>${wordRows}</table>`, {
+    __closable: true,
+    reload: async (el) => { el.disabled = true; el.textContent = "讀取中…"; await loadWords(true); updateWordStatus(); openTeacher(); },
+    tpl: downloadTemplate,
+  });
+}
+$("teacher-btn").addEventListener("click", () => { Sound.init(); openTeacher(); });
+
+makeIcons(); makeTiles();
+$("coin-ico").src = icon("coin");
+drawTitleArt();
+if (cloudOn()) $("save-note").textContent = "進度會自動存到雲端，換平板只要輸入座號就能接著玩。";
+loadWords().then(updateWordStatus);
+updateWordStatus();
+resize(); renderSaves();
+if (!storageOK()) $("title-err").textContent = "注意：這個瀏覽器無法存檔（可能是私密瀏覽模式）";
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
