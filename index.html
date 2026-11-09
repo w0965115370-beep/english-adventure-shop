@@ -19,7 +19,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1d2b3a;color:var(--in
   font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #world{position:fixed;left:0;top:0;image-rendering:pixelated;image-rendering:crisp-edges}
-button{font:inherit;color:inherit;cursor:pointer}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 [hidden]{display:none!important}
 
 /* HUD */
@@ -160,6 +160,147 @@ ol.steps{padding-left:22px;line-height:1.7;font-size:16px;margin:6px 0}
   .q-prompt{font-size:34px;margin:6px 0 2px}.q-opt{min-height:56px;font-size:22px}
   #btn-a{width:88px;height:88px}#joy-base{width:112px;height:112px;margin:-56px 0 0 -56px}
 }
+
+/* =====================================================================
+   GBA 像素冒險風格介面（構圖參考 pixel-explore-edu-game）
+   ‧ 所有視窗：白底＋深色外框＋藍綠色內框（雙框），字有淡灰陰影
+   ‧ 對話：固定在畫面下方的長條對話框，名字牌在左上，選項在右側直列選單
+   ‧ 主選單：右上直列選單，▶ 游標
+   ‧ 狀態：左上單一狀態視窗；目標在下面
+   ===================================================================== */
+:root{
+  --win:#f8f8f0; --win2:#e8f0e8; --win-line:#283038; --win-in:#70b0c8; --win-in2:#a8d8e0;
+  --ink:#383838; --txt-sh:#d0d0c8; --muted:#707870; --cursor:#e05038;
+  --accent:#4890d8; --accent-dark:#204870; --good:#30a050; --bad:#d03828; --gold:#f0c030;
+  --panel:var(--win); --panel2:var(--win2); --border:var(--win-line);
+}
+html,body{background:#183028}
+body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;letter-spacing:.5px}
+
+/* 共用：GBA 雙框視窗 */
+.gba-win,#modal-box,#objective,#hud,#menu-btns,#title .card,.toast{
+  background:var(--win);color:var(--ink);border:3px solid var(--win-line);border-radius:8px;
+  box-shadow:inset 0 0 0 3px var(--win),inset 0 0 0 5px var(--win-in),0 4px 0 #0006;
+  text-shadow:1px 1px 0 var(--txt-sh)}
+
+/* ---- 左上：狀態視窗 ---- */
+#hud{flex-direction:column;flex-wrap:nowrap;gap:0;padding:8px 12px;min-width:150px}
+#hud .hud-box{background:none;border:0;border-radius:0;padding:2px 0;color:var(--ink);font-size:16px;justify-content:space-between;gap:10px}
+#hud .hud-box + .hud-box{border-top:2px dotted #b8c8c8}
+#hud .hud-box:first-child{color:#8a5a00;font-size:18px}
+#objective{top:auto;left:calc(8px + var(--sal));top:calc(8px + var(--sat) + var(--hud-h,96px));max-width:min(380px,56vw);padding:10px 14px 10px 14px;font-size:15px}
+#objective small{color:var(--cursor);letter-spacing:2px;margin-bottom:2px}
+#objective small::before{content:"▶ "}
+#objective .ob-hint{color:#506070}
+#objective.raid{background:#fff0ec;box-shadow:inset 0 0 0 3px #fff0ec,inset 0 0 0 5px #e07060,0 4px 0 #0006}
+
+/* ---- 右上：直列主選單 ---- */
+#menu-btns{flex-direction:column;gap:0;padding:8px 6px;min-width:118px}
+#menu-btns button{position:relative;min-width:0;height:44px;padding:0 10px 0 26px;text-align:left;font-size:17px;background:none;border:0;border-radius:4px;box-shadow:none;text-shadow:inherit;color:var(--ink)}
+#menu-btns button::before{content:"▶";position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--cursor);opacity:0}
+#menu-btns button:hover::before,#menu-btns button:focus-visible::before,#menu-btns button:active::before{opacity:1}
+#menu-btns button:active{transform:none;background:var(--win2);box-shadow:none}
+#menu-btns .menu-logout{margin-top:4px;border-top:2px dotted #b8c8c8;border-radius:0;color:#a02010}
+
+/* ---- 觸控：搖桿與 A 鍵（掌機按鍵風） ---- */
+#joy-base{background:#28303855;border:3px solid #f8f8f088}
+#joy-knob{background:#d8d8d0;border:3px solid var(--win-line);box-shadow:inset -3px -3px 0 #a8a8a0}
+#btn-a{background:#c83850;border:4px solid #681828;color:#fff;text-shadow:2px 2px 0 #681828;box-shadow:inset -4px -5px 0 #901c34,0 5px 0 #0007}
+#btn-a.dim{background:#888c90;border-color:#484c50;text-shadow:2px 2px 0 #484c50;box-shadow:inset -4px -5px 0 #686c70,0 5px 0 #0007}
+
+/* ---- 提示：小視窗，從上方滑入 ---- */
+.toast{padding:8px 16px;font-size:16px;border-radius:6px}
+.toast.good{box-shadow:inset 0 0 0 3px var(--win),inset 0 0 0 5px #60c080,0 4px 0 #0006}
+.toast.gold{color:#7a5000;box-shadow:inset 0 0 0 3px var(--win),inset 0 0 0 5px var(--gold),0 4px 0 #0006}
+.toast.bad{color:#a02010;box-shadow:inset 0 0 0 3px var(--win),inset 0 0 0 5px #e07060,0 4px 0 #0006}
+.say-bub{background:var(--win);border-color:var(--win-line);border-radius:6px;color:var(--ink)}
+
+/* ---- 一般視窗（背包、任務、商店…） ---- */
+#modal{background:#10181880}
+#modal-box{padding:16px 20px 18px;border-radius:10px}
+#modal-box h2{margin:-2px 0 12px;font-size:21px;padding:0 0 8px;border-bottom:3px solid var(--win-in2)}
+#modal-box h2::before{content:"▶ ";color:var(--cursor);font-size:15px;vertical-align:2px}
+#modal-box h3{font-size:17px;color:#406878}
+.close-x{min-width:64px;min-height:40px;font-size:15px;background:var(--win2);border:2px solid var(--win-line);border-radius:6px;box-shadow:0 2px 0 #0004;text-shadow:none}
+.close-x::before{content:"✕ "}
+
+/* 按鈕：像素平塗，硬陰影 */
+.btn{position:relative;border-radius:6px;border:3px solid var(--accent-dark);background:var(--accent);color:#fff;text-shadow:1px 1px 0 var(--accent-dark);box-shadow:inset -3px -3px 0 #2c6aa8,0 3px 0 #0005}
+.btn.alt{background:var(--win2);color:var(--ink);border-color:var(--win-line);text-shadow:1px 1px 0 var(--txt-sh);box-shadow:inset -3px -3px 0 #c8d0c8,0 3px 0 #0005}
+.btn:disabled{background:#c8c8c0;color:#888;border-color:#909090;text-shadow:none;box-shadow:none}
+.btn:not(:disabled):hover::after,.btn:not(:disabled):focus-visible::after{content:"◀";position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;opacity:.8}
+
+/* 清單與格子 */
+.row,.item-cell,.save-chip{background:#fff;border:2px solid #b8c8c8;border-radius:6px}
+.bar{background:#d8e0d8;border:2px solid var(--win-line);height:12px;border-radius:3px}
+.bar>i{background:linear-gradient(#78d878 0 50%,#48b048 50%)}
+.price-val{background:#fff;border:2px solid #b8c8c8;border-radius:6px;padding:4px 0}
+table.words{background:#fff}
+
+/* ---- 對話：底部長條對話框（GBA 經典構圖） ---- */
+#modal.dock{align-items:flex-end;background:transparent;padding-bottom:calc(10px + var(--sab))}
+#modal.dock #modal-box{position:relative;width:min(900px,100%);overflow:visible;padding:22px 22px 16px;min-height:120px;margin-top:40px}
+#modal.dock .speaker{position:absolute;left:14px;top:-20px;margin:0;background:var(--win);color:var(--ink);border:3px solid var(--win-line);border-radius:6px;padding:2px 14px;box-shadow:inset 0 0 0 2px var(--win),inset 0 0 0 4px var(--win-in)}
+#modal.dock .say{font-size:21px;margin:0 0 8px;line-height:1.7;min-height:2.2em}
+/* 只有「繼續／好」：變成右下角跳動的 ▼ */
+#modal.dock .btn-row.next{justify-content:flex-end}
+#modal.dock .btn-row.next .btn{flex:0 0 auto;min-height:44px;background:none;border:0;box-shadow:none;color:var(--ink);text-shadow:1px 1px 0 var(--txt-sh);padding:4px 8px}
+#modal.dock .btn-row.next .btn::after{content:" ▼";color:var(--cursor);display:inline-block;animation:nextbob .8s steps(2) infinite}
+@keyframes nextbob{50%{transform:translateY(3px)}}
+/* 有選項：右側直列選單視窗（像「是／否」） */
+#modal.dock .btn-row.choices{position:absolute;right:10px;bottom:calc(100% + 8px);flex-direction:column;flex-wrap:nowrap;gap:2px;min-width:180px;max-width:min(360px,80vw);max-height:60vh;overflow:auto;padding:8px;background:var(--win);border:3px solid var(--win-line);border-radius:8px;box-shadow:inset 0 0 0 3px var(--win),inset 0 0 0 5px var(--win-in),0 4px 0 #0006}
+#modal.dock .btn-row.choices .btn{flex:none;text-align:left;min-height:46px;padding:4px 12px 4px 28px;background:none;border:0;border-radius:4px;box-shadow:none;color:var(--ink);text-shadow:1px 1px 0 var(--txt-sh);font-size:18px}
+#modal.dock .btn-row.choices .btn::before{content:"▶";position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--cursor);opacity:0}
+#modal.dock .btn-row.choices .btn:first-child::before,#modal.dock .btn-row.choices .btn:hover::before,#modal.dock .btn-row.choices .btn:active::before{opacity:1}
+#modal.dock .btn-row.choices:hover .btn:first-child:not(:hover)::before{opacity:0}
+#modal.dock .btn-row.choices .btn:active{background:var(--win2)}
+#modal.dock .btn-row.choices .btn::after{content:none}
+
+/* ---- 英文挑戰：上方題目視窗＋下方 2×2 選單（對戰選單構圖） ---- */
+.q-tag{background:var(--win-line);color:#fff;text-shadow:none;border-radius:3px}
+.q-prompt{background:#fff;border:2px solid #b8c8c8;border-radius:8px;padding:14px 8px;margin:12px 0 6px}
+.q-opts{background:var(--win2);border:3px solid var(--win-line);border-radius:8px;padding:10px;gap:8px}
+.q-opt{position:relative;background:#fff;border:2px solid #b8c8c8;border-radius:6px;box-shadow:none;text-align:left;padding:6px 10px 6px 30px;font-size:24px;color:var(--ink);text-shadow:1px 1px 0 var(--txt-sh)}
+.q-opt::before{content:"▶";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--cursor);opacity:0}
+.q-opt:not(:disabled):hover::before,.q-opt:not(:disabled):active::before{opacity:1}
+.q-opt.right{background:#d0f8d8;border-color:var(--good)}
+.q-opt.right::before{content:"○";opacity:1;color:var(--good)}
+.q-opt.wrong{background:#ffe0d8;border-color:var(--bad)}
+.q-opt.wrong::before{content:"✕";opacity:1;color:var(--bad)}
+.speak{background:var(--win2);border:2px solid var(--win-line);text-shadow:none}
+
+/* ---- 標題畫面 ---- */
+#title{background:repeating-linear-gradient(0deg,#0000 0 3px,#0000000d 3px 4px),linear-gradient(#58a0e0 0 55%,#68b058 55% 100%)}
+#title .card{padding:0 0 16px;border-radius:10px}
+#title-art{border-bottom:3px solid var(--win-line);border-radius:6px 6px 0 0}
+#title h1{color:#c83850;text-shadow:2px 2px 0 #f8d878,4px 4px 0 var(--win-line)}
+.name-btn{background:#fff;border:2px solid var(--win-line);border-radius:6px;box-shadow:inset -3px -3px 0 #d8e0d8,0 3px 0 #0004;color:var(--ink)}
+#seat{background:#fff;border:2px solid var(--win-line)}
+
+/* ---- 拼字工作台 ---- */
+.spell-badge{display:inline-block;background:var(--cursor);color:#fff;text-shadow:none;font-size:12px;padding:1px 6px;border-radius:3px;vertical-align:2px}
+.spell-item{display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0 2px;font-size:24px}
+.spell-item img{width:40px;height:40px;image-rendering:pixelated}
+.spell-slots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:12px 0;padding:10px;background:#fff;border:2px solid #b8c8c8;border-radius:8px}
+.spell-slot{width:44px;height:54px;display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:bold;border-bottom:4px solid var(--win-line);color:var(--ink)}
+.spell-slot.on{background:var(--win2);border-radius:4px 4px 0 0}
+.spell-slot.ok{background:#d0f8d8;border-color:var(--good)}
+.spell-slot.bad{background:#ffe0d8;border-color:var(--bad);animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.spell-tiles{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px;background:var(--win2);border:3px solid var(--win-line);border-radius:8px}
+.spell-tile{width:58px;height:58px;font-size:30px;font-weight:bold;background:#fff;color:var(--ink);border:2px solid var(--win-line);border-radius:6px;box-shadow:inset -3px -3px 0 #d8e0d8,0 3px 0 #0004;text-shadow:1px 1px 0 var(--txt-sh)}
+.spell-tile:active{transform:translateY(2px);box-shadow:none}
+.spell-tile:disabled{opacity:.25;box-shadow:none}
+.spell-ctl{justify-content:center;margin-top:10px}.spell-ctl .btn{flex:0 0 120px}
+@media (max-height:500px){
+  .spell-slot{width:36px;height:42px;font-size:26px}.spell-tile{width:48px;height:48px;font-size:24px}
+  #menu-btns button{height:36px;font-size:15px}
+  #modal.dock #modal-box{min-height:96px;padding-top:18px}
+  #modal.dock .say{font-size:18px}
+}
+@media (max-width:600px){
+  #objective{max-width:calc(100vw - 150px)}
+}
 </style>
 </head>
 <body>
@@ -177,6 +318,7 @@ ol.steps{padding-left:22px;line-height:1.7;font-size:16px;margin:6px 0}
   <button data-open="words">單字本</button>
   <button data-open="settings">設定</button>
   <button data-open="help">說明</button>
+  <button data-open="logout" class="menu-logout">登出</button>
 </div>
 <div id="joy-zone" hidden><div id="joy-base" class="idle"><div id="joy-knob"></div></div></div>
 <button id="btn-a" class="dim" hidden><span id="btn-a-label">互動</span></button>
@@ -269,7 +411,8 @@ const SHOP_OPEN = 7 * 60, SHOP_CLOSE = 21 * 60;
 const QUESTION_COOLDOWN_MS = 25000;
 const GATHER_QUESTION_CHANCE = 0.65;
 const PRACTICE_PER_DAY = 3;
-const MAX_SALES_PER_DAY = 30;
+const MAX_SALES_PER_DAY = 60;
+const CUSTOMER_GAP = () => randInt(12, 22);   // 每隔幾分鐘（遊戲時間）來一位顧客，約現實 10～18 秒
 
 /* ---------------- 工具 ---------------- */
 const $ = (id) => document.getElementById(id);
@@ -431,6 +574,13 @@ const ITEMS = {
   coconut:  { zh: "椰子", en: "coconut",  price: 15 },
   necklace: { zh: "貝殼項鍊", en: "necklace", price: 45, crafted: true },
   cjuice:   { zh: "椰子汁", en: "coconut juice", price: 38, crafted: true },
+  // 第二章：礦坑
+  coal:     { zh: "煤炭", en: "coal", price: 8 },
+  iron:     { zh: "鐵礦", en: "iron", price: 14 },
+  gem:      { zh: "寶石", en: "gem",  price: 35 },
+  lamp:     { zh: "礦燈",     en: "lamp",  price: 60,  crafted: true },
+  ring:     { zh: "寶石戒指", en: "ring",  price: 95,  crafted: true },
+  crown:    { zh: "寶石皇冠", en: "crown", price: 230, crafted: true },
 };
 // 英文訂單用：[單數, 複數]
 const PHRASE = {
@@ -442,6 +592,8 @@ const PHRASE = {
   sunflower: ["sunflower", "sunflowers"], pumpkin: ["pumpkin", "pumpkins"],
   shell: ["shell", "shells"], coconut: ["coconut", "coconuts"], necklace: ["necklace", "necklaces"], cjuice: ["cup of coconut juice", "cups of coconut juice"],
   tomatosoup: ["bowl of tomato soup", "bowls of tomato soup"], cake: ["strawberry cake", "strawberry cakes"], pie: ["pumpkin pie", "pumpkin pies"],
+  coal: ["piece of coal", "pieces of coal"], iron: ["piece of iron", "pieces of iron"], gem: ["gem", "gems"],
+  lamp: ["lamp", "lamps"], ring: ["ring", "rings"], crown: ["crown", "crowns"],
 };
 // 作物：種子價格、成長時間（遊戲分鐘；現實 1 秒 = 1.2 分）、收成數量
 const CROPS = {
@@ -453,16 +605,20 @@ const CROPS = {
 };
 const FARM_PLOTS = 12;
 const NUM_EN = ["zero", "one", "two", "three", "four", "five"];
+// spell：高級商品要在「拼字工作台」把字母排成正確的英文才做得出來
 const RECIPES = [
   { out: "jam",     need: { berry: 3 } },
   { out: "bouquet", need: { flower: 3 } },
   { out: "soup",    need: { mushroom: 2, herb: 1 } },
-  { out: "potion",  need: { herb: 2, honey: 1 } },
+  { out: "potion",  need: { herb: 2, honey: 1 }, spell: "potion" },
   { out: "tomatosoup", need: { tomato: 2 } },
-  { out: "cake",       need: { strawberry: 3 } },
-  { out: "pie",        need: { pumpkin: 1, berry: 2 } },
-  { out: "necklace",   need: { shell: 3, flower: 1 } },
+  { out: "cake",       need: { strawberry: 3 }, spell: "cake" },
+  { out: "pie",        need: { pumpkin: 1, berry: 2 }, spell: "pie" },
+  { out: "necklace",   need: { shell: 3, flower: 1 }, spell: "necklace" },
   { out: "cjuice",     need: { coconut: 2 } },
+  { out: "lamp",       need: { iron: 2, coal: 1 }, spell: "lamp", needMine: true },
+  { out: "ring",       need: { gem: 1, iron: 1 },  spell: "ring", needMine: true },
+  { out: "crown",      need: { gem: 3, iron: 2 },  spell: "crown", needMine: true },
 ];
 const NODE_KINDS = {
   tree:     { item: "wood",     min: 1, max: 2, cd: 240,  verb: "砍樹" },
@@ -473,16 +629,19 @@ const NODE_KINDS = {
   hive:     { item: "honey",    min: 1, max: 1, cd: 1440, verb: "取蜂蜜" },
   palm:     { item: "coconut",  min: 1, max: 2, cd: 480,  verb: "摘椰子" },
   shell:    { item: "shell",    min: 1, max: 2, cd: 300,  verb: "撿貝殼" },
+  coal:     { item: "coal",     min: 1, max: 2, cd: 300,  verb: "挖煤炭" },
+  iron:     { item: "iron",     min: 1, max: 2, cd: 420,  verb: "挖鐵礦" },
+  gem:      { item: "gem",      min: 1, max: 1, cd: 1440, verb: "挖寶石", noTool: true },
   chest:    { cd: 1440, verb: "打開" },
 };
 const UPGRADES = {
-  backpack:  { name: "背包",     values: [20, 30, 40, 50], unit: (v) => `可裝 ${v} 個`,
+  backpack:  { name: "背包",     values: [40, 60, 80, 100], unit: (v) => `可裝 ${v} 個`,
                costs: [null, { coins: 60 }, { coins: 150, items: { wood: 10 } }, { coins: 300, items: { wood: 20 } }] },
   tool:      { name: "採集工具", values: [0, 1, 2, 3], unit: (v) => `採集量 +${v}`,
                costs: [null, { coins: 80, items: { wood: 5 } }, { coins: 200, items: { herb: 10 } }, { coins: 400, items: { mushroom: 5 } }] },
   shelfSlots:{ name: "貨架格數", values: [3, 4, 5, 6], unit: (v) => `${v} 格貨架`,
                costs: [null, { coins: 100, items: { wood: 10 } }, { coins: 250, items: { wood: 20 } }, { coins: 500, items: { honey: 10 } }] },
-  shelfCap:  { name: "貨架容量", values: [5, 8, 12], unit: (v) => `每格放 ${v} 個`,
+  shelfCap:  { name: "貨架容量", values: [8, 12, 16], unit: (v) => `每格放 ${v} 個`,
                costs: [null, { coins: 120 }, { coins: 300, items: { wood: 15 } }] },
   shoes:     { name: "運動鞋",   values: [0, 0.1, 0.2], unit: (v) => `速度 +${Math.round(v * 100)}%`,
                costs: [null, { coins: 100 }, { coins: 250 }] },
@@ -510,6 +669,7 @@ const DAILY_POOL = [
   { id: "fish2",   text: "在池塘釣到 2 條魚", ev: "fish", n: 2, reward: { coins: 20 } },
   { id: "harv3",   text: "在農田收成 3 個作物", ev: "harvest", n: 3, reward: { coins: 20 } },
   { id: "wish2",   text: "滿足 2 位指名顧客", ev: "wish", n: 2, reward: { coins: 25 } },
+  { id: "g_iron",  text: "在礦坑挖 3 個鐵礦", ev: "gather", item: "iron", n: 3, reward: { coins: 30 }, needStep: 20 },
 ];
 const MAIN = [
   "和村長說話",
@@ -529,7 +689,16 @@ const MAIN = [
   "保衛村莊：趕走搗亂的動物！",
   "回去向村長報告",
   "做一條貝殼項鍊，送給漁夫阿海",
-  "主線完成！繼續經營商店、保護村莊",
+  // ---- 第二章：礦坑 ----
+  "第二章：去找工匠阿木，打聽北邊的老礦坑",
+  "存到 300 金＋20 個木材，請工匠打通礦坑",
+  "進入北邊的礦坑，挖 3 個鐵礦",
+  "收集 5 個鐵礦＋10 個木材，修好礦車",
+  "沿著鐵軌到礦坑深處，找到迷路的礦工",
+  "在工作台做一盞礦燈，拿給礦工老石",
+  "在礦坑深處挖到 1 顆寶石",
+  "做一枚寶石戒指，送給村長",
+  "主線完成！挖礦、做高級商品、保護村莊",
 ];
 const SEED_SHOP = "綠芽種子店";
 // 交通工具：在戶外騎乘，移動更快
@@ -582,6 +751,14 @@ const MAIN_HINT = [
   "靠近動物按右下角「攻擊」，或直接點動物",
   "跟著箭頭去找村長",
   "在商店的工作台用 3 個貝殼＋1 朵野花做項鍊，再拿給阿海",
+  "工匠阿木在村子右上方的工具店前面，按「對話」",
+  "多賣東西存錢，木材在森林。都夠了就去找工匠阿木",
+  "礦坑入口在村子右上角的路。站在發亮的石頭旁按「挖鐵礦」",
+  "鐵礦在礦坑、木材在森林。都夠了就到礦坑裡的礦車旁按「礦車」",
+  "沿著鐵軌往北走（或在礦車旁選「坐礦車」），找到礦工",
+  "礦燈＝2 個鐵礦＋1 個煤炭。到商店工作台，把字母排成 l-a-m-p",
+  "寶石在礦坑深處，閃著藍光的石頭就是",
+  "戒指＝1 顆寶石＋1 個鐵礦，在工作台拼出 r-i-n-g，再拿給村長",
   "打開右上角「任務」做每日任務；聽到警報就回村子趕走動物！",
 ];
 
@@ -684,14 +861,22 @@ function makeIcons() {
   ICONS.w_knife = mk(16, 16, (g) => { for (let i = 0; i < 7; i++) P(g, 7 + i, 8 - i, "#c8d0dc", 2, 2); P(g, 8, 7, "#ffffff", 1, 1); P(g, 5, 8, "#6b4226", 3, 3); for (let i = 0; i < 4; i++) P(g, 2 + i, 13 - i, "#8b5a2b", 2, 2); });
   ICONS.w_sword = mk(16, 16, (g) => { for (let i = 0; i < 9; i++) P(g, 5 + i, 10 - i, "#c8d0dc", 2, 2); for (let i = 0; i < 9; i++) P(g, 6 + i, 10 - i, "#ffffff", 1, 1); P(g, 2, 9, "#e0b040", 6, 2); P(g, 4, 7, "#e0b040", 2, 6); for (let i = 0; i < 3; i++) P(g, 1 + i, 14 - i, "#6b4226", 2, 2); });
   ICONS.w_bow = mk(16, 16, (g) => { for (let a = 0; a < 12; a++) { const t = a / 11 * Math.PI; P(g, Math.round(4 + Math.sin(t) * 5), Math.round(2 + a), "#8b5a2b", 2, 1); } P(g, 4, 2, "#f4f0e0", 1, 12); for (let i = 0; i < 10; i++) P(g, 4 + i, 8, "#a8763e"); P(g, 14, 7, "#c8d0dc", 2, 3); P(g, 3, 7, "#d04a4a", 2, 3); });
+  // 第二章：礦物與礦物商品
+  ICONS.coal = mk(16, 16, (g) => { circle(g, 8, 9, 5, "#1e1e24"); P(g, 3, 9, "#1e1e24", 11, 4); P(g, 5, 6, "#3a3a46", 3, 2); P(g, 10, 9, "#3a3a46", 2, 2); P(g, 6, 11, "#50505e", 1, 1); });
+  ICONS.iron = mk(16, 16, (g) => { circle(g, 8, 9, 6, "#6a6470"); P(g, 2, 9, "#6a6470", 13, 4); P(g, 4, 6, "#8a8490", 4, 2); for (const [a, b] of [[5, 9], [9, 7], [11, 11], [7, 12]]) { P(g, a, b, "#c8743a", 2, 2); P(g, a, b, "#e8a060"); } });
+  ICONS.gem = mk(16, 16, (g) => { P(g, 4, 3, "#3ac8e0", 8, 3); P(g, 2, 6, "#1a9ab8", 12, 2); for (let i = 0; i < 6; i++) P(g, 3 + i, 8 + i, "#1a8aa8", 10 - i * 2, 1); P(g, 5, 4, "#c8f8ff", 2, 1); P(g, 4, 6, "#7ae0f0", 3, 2); });
+  ICONS.lamp = mk(16, 16, (g) => { P(g, 6, 1, "#5a5a6a", 4, 2); P(g, 5, 3, "#3a3a46", 6, 2); P(g, 4, 5, "#3a3a46", 8, 8); P(g, 5, 6, "#ffd84a", 6, 6); P(g, 7, 7, "#fff7c0", 2, 3); P(g, 4, 13, "#3a3a46", 8, 2); P(g, 1, 8, "#ffe08a66", 2, 2); P(g, 13, 8, "#ffe08a66", 2, 2); });
+  ICONS.ring = mk(16, 16, (g) => { for (let a = 0; a < 20; a++) { const t = a / 20 * Math.PI * 2; P(g, Math.round(8 + Math.cos(t) * 5), Math.round(10 + Math.sin(t) * 4), "#e0b040", 1, 1); } P(g, 6, 2, "#3ac8e0", 4, 3); P(g, 7, 2, "#c8f8ff", 1, 1); P(g, 7, 5, "#c89a30", 2, 1); });
+  ICONS.crown = mk(16, 16, (g) => { P(g, 2, 8, "#e0b040", 12, 5); P(g, 2, 4, "#e0b040", 2, 4); P(g, 7, 2, "#e0b040", 2, 6); P(g, 12, 4, "#e0b040", 2, 4); P(g, 2, 12, "#b08020", 12, 1); P(g, 7, 9, "#3ac8e0", 2, 2); P(g, 4, 10, "#e0284a", 1, 1); P(g, 11, 10, "#3ac8e0", 1, 1); P(g, 3, 8, "#fff0a0", 10, 1); });
   ICONS.coin = mk(16, 16, (g) => { circle(g, 8, 8, 6, "#b8860b"); circle(g, 8, 8, 5, "#f2c230"); P(g, 7, 4, "#fff3b0", 2, 8); P(g, 6, 5, "#ffe27a", 1, 6); });
 }
 const iconURL = {};
 function icon(name) { if (!iconURL[name]) iconURL[name] = ICONS[name].toDataURL(); return iconURL[name]; }
 
 // 地圖格
-const TILE = { GRASS: 0, GRASS2: 1, PATH: 2, WATER: 3, TREE: 4, FENCE: 5, FLOOR: 6, WALL: 7, BRIDGE: 8, BROKEN: 9, DARK: 10, WALLTOP: 11, SAND: 12, PALMWALL: 13 };
-const SOLID_TILES = new Set([TILE.WATER, TILE.TREE, TILE.FENCE, TILE.WALL, TILE.BROKEN, TILE.WALLTOP, TILE.PALMWALL]);
+const TILE = { GRASS: 0, GRASS2: 1, PATH: 2, WATER: 3, TREE: 4, FENCE: 5, FLOOR: 6, WALL: 7, BRIDGE: 8, BROKEN: 9, DARK: 10, WALLTOP: 11, SAND: 12, PALMWALL: 13,
+  CAVE: 14, CAVEWALL: 15, RAIL: 16, RAILBROKEN: 17, ROCK: 18 };
+const SOLID_TILES = new Set([TILE.WATER, TILE.TREE, TILE.FENCE, TILE.WALL, TILE.BROKEN, TILE.WALLTOP, TILE.PALMWALL, TILE.CAVEWALL, TILE.RAILBROKEN, TILE.ROCK]);
 const tileImgs = {};
 function grassTile(base, dark, light, seed, flowers) {
   const r = seeded(seed);
@@ -723,6 +908,12 @@ function makeTiles() {
   tileImgs[TILE.BRIDGE] = [mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.WATER][0], 0, 0); P(g, 0, 1, "#a8763e", 16, 14); for (let x = 0; x < 16; x += 4) P(g, x, 1, "#7a5230", 1, 14); P(g, 0, 1, "#c99a64", 16, 1); P(g, 0, 14, "#5a3a20", 16, 1); })];
   tileImgs[TILE.SAND] = [0, 1, 2].map((i) => { const r = seeded(140 + i); return mk(16, 16, (g) => { P(g, 0, 0, "#ecd9a0", 16, 16); for (let k = 0; k < 12; k++) P(g, Math.floor(r() * 16), Math.floor(r() * 16), r() < 0.5 ? "#dcc488" : "#f8ecc0"); }); });
   tileImgs[TILE.PALMWALL] = [0, 1].map((i) => mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.SAND][i], 0, 0); P(g, 6, 6, "#8b5a2b", 3, 10); circle(g, 8, 5, 6, "#2f7a3a"); circle(g, 7, 4, 3, "#58b368"); }));
+  tileImgs[TILE.CAVE] = [0, 1, 2].map((i) => { const r = seeded(210 + i); return mk(16, 16, (g) => { P(g, 0, 0, "#6a5c50", 16, 16); for (let k = 0; k < 12; k++) P(g, Math.floor(r() * 16), Math.floor(r() * 16), r() < 0.5 ? "#5a4c42" : "#7a6c60"); }); });
+  tileImgs[TILE.CAVEWALL] = [0, 1].map((i) => { const r = seeded(230 + i); return mk(16, 16, (g) => { P(g, 0, 0, "#2e2622", 16, 16); for (let k = 0; k < 4; k++) { const x = Math.floor(r() * 12), y = Math.floor(r() * 12); P(g, x, y, "#4a3e36", 4, 3); P(g, x, y, "#5a4c42", 3, 1); } }); });
+  const railOn = (g) => { for (let y = 1; y < 16; y += 5) P(g, 1, y, "#7a5230", 14, 2); P(g, 3, 0, "#9a9aa8", 2, 16); P(g, 11, 0, "#9a9aa8", 2, 16); P(g, 3, 0, "#c8c8d4", 1, 16); P(g, 11, 0, "#c8c8d4", 1, 16); };
+  tileImgs[TILE.RAIL] = [0, 1].map((i) => mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.CAVE][i], 0, 0); railOn(g); }));
+  tileImgs[TILE.RAILBROKEN] = [0, 1].map((i) => mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.CAVE][i], 0, 0); P(g, i ? 2 : 6, 3, "#7a5230", 7, 2); P(g, 3, i ? 9 : 6, "#9a9aa8", 2, 5); circle(g, i ? 11 : 4, 11, 3, "#4a3e36"); circle(g, i ? 10 : 5, 10, 2, "#5a4c42"); }));
+  tileImgs[TILE.ROCK] = [0, 1].map((i) => mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.PATH][i], 0, 0); circle(g, 8, 9, 7, "#5a5a66"); circle(g, 7, 8, 5, "#7a7a88"); P(g, 5, 5, "#a0a0b0", 3, 2); P(g, 10, 11, "#4a4a56", 3, 2); }));
   tileImgs[TILE.BROKEN] = [0, 1].map((i) => mk(16, 16, (g) => { g.drawImage(tileImgs[TILE.WATER][0], 0, 0); P(g, i ? 1 : 6, 3, "#8a6a40", 5, 3); P(g, i ? 8 : 2, 10, "#7a5a36", 6, 2); }));
 }
 
@@ -795,6 +986,10 @@ function buildVillage() {
   sc.warps.push({ x: 39, y: 12, w: 1, h: 2, to: "forest", tx: 1.6, ty: 17.4, dir: "right" });
   sc.warps.push({ x: 30, y: 25, w: 2, h: 1, to: "beach", tx: 20, ty: 2.6, dir: "down" });
   rect(sc, 30, 14, 31, 25, TILE.PATH);
+  // 第二章：村子右上角往北通往礦坑（一開始被大石頭擋住）
+  rect(sc, 35, 2, 36, 11, TILE.PATH);
+  addEnt(sc, { id: "sign_mine", type: "sign", tx: 37, ty: 3, solid: true, text: "↑ 老礦坑" });
+  sc.warps.push({ x: 35, y: 0, w: 2, h: 1, to: "mine", tx: 18, ty: 21.6, dir: "up" });
   sc.spawn = { tx: 8.5, ty: 10.4 };
   rebuildSolid(sc); return sc;
 }
@@ -843,6 +1038,30 @@ function buildBeach() {
   walker(sc, "w_surf", "衝浪阿翔", 31, 12, { hair: "#c06a3a", shirt: "#3a7ad0" }, ["Cool! 今天的浪好大！", "Let's go swimming! 一起去游泳吧！", "聽說漁夫阿海知道很多事情。"]);
   sc.warps.push({ x: 19, y: 0, w: 2, h: 1, to: "village", tx: 31, ty: 23.4, dir: "up" });
   sc.spawn = { tx: 20, ty: 2.6 };
+  rebuildSolid(sc); return sc;
+}
+function buildMine() {
+  const sc = makeScene("mine", 36, 24, TILE.CAVEWALL);
+  sc.outdoor = false;   // 礦坑裡不能騎車
+  const C = TILE.CAVE;
+  // 前廳（入口在下方）
+  rect(sc, 5, 13, 30, 20, C); ellipse(sc, 9, 16, 5, 4, C); ellipse(sc, 26, 16, 5, 4, C);
+  rect(sc, 17, 21, 18, 23, C);
+  for (const [x, y] of [[14, 16], [23, 16], [5, 13], [30, 13], [5, 20], [30, 20]]) setTile(sc, x, y, TILE.CAVEWALL);
+  // 礦坑深處（要修好鐵軌才過得去）
+  ellipse(sc, 18, 5, 12, 4, C);
+  rect(sc, 17, 1, 18, 12, TILE.RAIL);
+  const node = (kind, x, y, deep = false) => addEnt(sc, { id: `m_${kind}_${x}_${y}`, type: "node", kind, tx: x, ty: y, solid: true, deep, clearTo: C });
+  for (const [x, y] of [[7, 15], [12, 19], [25, 14], [28, 19]]) node("coal", x, y);
+  for (const [x, y] of [[9, 18], [22, 19], [29, 16]]) node("iron", x, y);
+  for (const [x, y] of [[24, 7], [11, 7]]) node("iron", x, y, true);
+  for (const [x, y] of [[9, 4], [27, 5], [13, 2]]) node("gem", x, y, true);
+  addEnt(sc, { id: "m_chest", type: "node", kind: "chest", loot: ["coal", "iron"], tx: 6, ty: 19, clearTo: C });
+  addEnt(sc, { id: "cart", type: "cart", tx: 19, ty: 13, solid: true });
+  addEnt(sc, { id: "sign_deep", type: "sign", tx: 15, ty: 13, solid: true, text: "↑ 礦坑深處（鐵軌壞了，要先修好礦車）" });
+  addEnt(sc, { id: "miner", type: "npc", name: "礦工老石", tx: 25, ty: 3, solid: true, dir: "down", clearTo: C, look: { hair: "#4a4a4a", shirt: "#c8742a", pants: "#3a3a4a" } });
+  sc.warps.push({ x: 17, y: 23, w: 2, h: 1, to: "village", tx: 36, ty: 2.6, dir: "down" });
+  sc.spawn = { tx: 18, ty: 21.6 };
   rebuildSolid(sc); return sc;
 }
 function buildShop() {
@@ -1090,6 +1309,7 @@ function toast(msg, cls = "") {
 }
 let modalHandlers = {}, modalOnClose = null;
 function openModal(html, handlers = {}, onClose = null) {
+  $("modal").classList.remove("dock");
   $("modal-box").innerHTML = html; modalHandlers = handlers; modalOnClose = onClose;
   $("modal").hidden = false; $("modal-box").scrollTop = 0; input.reset();
 }
@@ -1116,7 +1336,8 @@ function talk(name, lines, choices = null, after = null) {
       : `<button class="btn" data-act="next">${last ? "好" : "繼續"}</button>`;
     const h = { next: () => { if (last) { closeModal(); if (after) after(); } else { i++; show(); } } };
     if (choices) choices.forEach((c, k) => { h["c" + k] = () => { closeModal(); if (c.fn) c.fn(); }; });
-    openModal(`<span class="speaker">${esc(name)}</span><p class="say">${esc(arr[i])}</p><div class="btn-row">${btns}</div>`, h);
+    openModal(`<span class="speaker">${esc(name)}</span><p class="say">${esc(arr[i])}</p><div class="btn-row ${last && choices ? "choices" : "next"}">${btns}</div>`, h);
+    $("modal").classList.add("dock");
   };
   show();
 }
@@ -1230,6 +1451,7 @@ function ensureDaily() {
   if (S.main.step >= 6) avail.push("jam", "bouquet");
   if (S.flags.bridge) avail.push("mushroom", "honey", "soup", "potion");
   if (S.flags.beach) avail.push("shell", "coconut");
+  if (S.flags.mine) avail.push("coal", "iron", "lamp");
   const item = avail[Math.floor(r() * avail.length)];
   const n = ITEMS[item].crafted ? 1 + Math.floor(r() * 2) : 2 + Math.floor(r() * 3);
   S.order = { day: d, item, n, done: false };
@@ -1265,6 +1487,7 @@ const NPC_IDLE = {
   fox: ["嗚嗚～（小狐狸搖搖尾巴）", "森林深處有好多蜂蜜喔！"],
   wheel: ["騎車跑得快，送貨更方便！", "Bike 就是腳踏車，Horse 是馬喔！", "存夠錢就來買一台吧！"],
   fisherman: ["海風好舒服啊～", "Shell 就是貝殼，Coconut 是椰子。", "聽到警報要趕快回村子喔！"],
+  miner: ["Iron 是鐵，Coal 是煤炭，Gem 是寶石！", "礦坑裡要小心腳下喔。", "寶石做成皇冠（crown），可以賣好多錢！"],
 };
 function interact(e) {
   if (!e || action) return;
@@ -1284,7 +1507,19 @@ function interact(e) {
     case "stall": return openSeedShop();
     case "bikes": return openVehicles();
     case "animal": return attackAnimal(e.a);
+    case "cart": return cartAction();
   }
+}
+function cartAction() {
+  const st = S.main.step;
+  if (S.flags.cart) return talk("礦車", "礦車修好了！要坐礦車到礦坑深處嗎？", [
+    { label: "坐礦車出發！", fn: () => { Sound.sfx("door"); fade(() => { enterScene("mine", 18, 9.4, "up"); writeSave(); toast("咻～到礦坑深處了！", "gold"); }); } },
+    { label: "不用了", alt: true }]);
+  if (st < 20) return talk("礦車", "這台礦車壞掉了，前面的鐵軌也斷了……\n（之後的主線任務會修好它）");
+  if (has({ iron: 5, wood: 10 })) return talk("礦車", "材料都齊了！要動手修礦車和鐵軌嗎？", [
+    { label: "交出 5 鐵礦＋10 木材", fn: () => { takeItems({ iron: 5, wood: 10 }); S.flags.cart = true; applyFlags(); Sound.sfx("up"); toast("礦車和鐵軌修好了！可以前往礦坑深處", "gold"); if (S.main.step === 20) advanceMain(21); writeSave(); } },
+    { label: "等一下", alt: true }]);
+  return talk("礦車", `修好礦車和鐵軌需要 5 個鐵礦和 10 個木材。\n你現在有鐵礦 ${S.inv.iron || 0}、木材 ${S.inv.wood || 0}。`);
 }
 function markTalk(id) { if (!S.talkedToday.includes(id)) { S.talkedToday.push(id); questEvent("talk"); } }
 function runQuiz(e) {
@@ -1329,6 +1564,12 @@ function talkNpc(e) {
         { label: "等一下", alt: true }]);
       return talk("村長", ["你真是越來越厲害了！", "村子右下角有一條通往海邊的路，可是被柵欄擋住了。", `存到 300 金來找我，我就幫你開通。（你現在有 ${S.coins} 金）`]);
     }
+    if (st === 24) {
+      if ((S.inv.ring || 0) >= 1) return talk("村長", "這……這是寶石戒指？要送給我嗎？", [
+        { label: "送給村長", fn: () => { addItem("ring", -1); talk("村長", ["好漂亮的戒指！謝謝你！", "你打通了老礦坑，還救了礦工老石，真是村子的英雄！", "這是全村送你的謝禮：300 金！"], null, () => { giveReward({ coins: 300 }); Sound.sfx("up"); advanceMain(25); toast("第二章完成！你是村子的英雄！", "gold"); }); } },
+        { label: "等一下", alt: true }]);
+      return talk("村長", "聽說你在礦坑挖到寶石了？真厲害！");
+    }
     if (st === 15) return talk("村長", ["你把動物都趕走了，村子安全了！真是太感謝你了！", "這是全村送你的謝禮：100 金！", "對了，漁夫阿海一直很照顧大家。做一條貝殼項鍊送他吧！工作台就能做。"], null, () => { giveReward({ coins: 100 }); advanceMain(16); });
     if (npcQuiz(e, "村長")) return;
     return talk("村長", pick(NPC_IDLE.mayor));
@@ -1341,6 +1582,13 @@ function talkNpc(e) {
       return talk("工匠阿木", `修橋需要 25 個木材和 8 個草藥。\n你現在有木材 ${S.inv.wood || 0}、草藥 ${S.inv.herb || 0}。`, [{ label: "看看升級", fn: openUpgrades }, { label: "好", alt: true }]);
     }
     if (st === 13) return talk("工匠阿木", "要保護村子？那你需要一把武器！", [{ label: "買武器", fn: openWeapons }, { label: "等一下", alt: true }]);
+    if (st === 17) return talk("工匠阿木", ["喔，大英雄來啦！你聽說了嗎？", "村子北邊的山裡有一座老礦坑，以前大家在那裡挖鐵礦（iron）和寶石（gem）。", "後來入口被一顆大石頭堵住，就沒人進去了。", "只要 300 金和 20 個木材，我就能把石頭搬開，把礦坑打通！"], null, () => advanceMain(18));
+    if (st === 18) {
+      if (S.coins >= 300 && (S.inv.wood || 0) >= 20) return talk("工匠阿木", "300 金和 20 個木材都準備好了！要打通礦坑嗎？", [
+        { label: "付 300 金＋20 木材", fn: () => { S.coins -= 300; takeItems({ wood: 20 }); S.flags.mine = true; applyFlags(); Sound.sfx("up"); toast("礦坑打通了！入口在村子右上角", "gold"); advanceMain(19); writeSave(); } },
+        { label: "等一下", alt: true }]);
+      return talk("工匠阿木", `打通礦坑需要 300 金和 20 個木材。\n你現在有 ${S.coins} 金、木材 ${S.inv.wood || 0} 個。`, [{ label: "看看升級", fn: openUpgrades }, { label: "好", alt: true }]);
+    }
     return talk("工匠阿木", pick(NPC_IDLE.craft), [{ label: "我要升級", fn: openUpgrades }, { label: "買武器", fn: openWeapons }, { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "工匠阿木")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
   }
   if (e.id === "granny") {
@@ -1353,12 +1601,23 @@ function talkNpc(e) {
     if (st === 12) return talk("漁夫阿海", ["喔！你就是村子裡開商店的小老闆吧？", "跟你說，最近野豬、浣熊和烏鴉常常跑進村子，偷吃田裡的作物……", "聽到警報的時候，要趕快回村子把牠們趕走！", "你先到工匠阿木那裡買一把武器吧。小刀只要 80 金。"], null, () => advanceMain(13));
     if (st === 16) {
       if ((S.inv.necklace || 0) >= 1) return talk("漁夫阿海", "這……這是送我的貝殼項鍊嗎？", [
-        { label: "送給阿海", fn: () => { addItem("necklace", -1); talk("漁夫阿海", ["好漂亮！謝謝你！", "這是我的謝禮：150 金。以後也請多多指教啦，小老闆！"], null, () => { giveReward({ coins: 150 }); Sound.sfx("up"); advanceMain(17); toast("主線全部完成！你是最棒的商店老闆！", "gold"); }); } },
+        { label: "送給阿海", fn: () => { addItem("necklace", -1); talk("漁夫阿海", ["好漂亮！謝謝你！", "這是我的謝禮：150 金。以後也請多多指教啦，小老闆！"], null, () => { giveReward({ coins: 150 }); Sound.sfx("up"); advanceMain(17); toast("第一章完成！工匠阿木好像有事找你……", "gold"); }); } },
         { label: "等一下", alt: true }]);
       return talk("漁夫阿海", "嗯？你在做什麼東西嗎？（貝殼項鍊：3 個貝殼＋1 朵野花，在商店的工作台做）");
     }
     if (npcQuiz(e, "漁夫阿海")) return;
     return talk("漁夫阿海", pick(NPC_IDLE.fisherman));
+  }
+  if (e.id === "miner") {
+    if (st === 21) return talk("礦工老石", ["救命啊！終於有人來了！", "我是礦工老石。我的礦燈（lamp）壞了，在黑漆漆的礦坑裡迷路好幾天……", "可以幫我做一盞新的礦燈嗎？2 個鐵礦＋1 個煤炭，在商店的工作台就能做。", "做的時候要把英文字母排好喔：l-a-m-p！"], null, () => advanceMain(22));
+    if (st === 22) {
+      if ((S.inv.lamp || 0) >= 1) return talk("礦工老石", "這是……新的礦燈！要給我嗎？", [
+        { label: "送給老石", fn: () => { addItem("lamp", -1); talk("礦工老石", ["哇，好亮！終於看得到路了，謝謝你！", "這是謝禮：120 金。", "跟你說個祕密：礦坑深處閃著藍光的石頭就是寶石（gem）！去挖一顆看看吧。"], null, () => { giveReward({ coins: 120 }); Sound.sfx("up"); advanceMain(23); }); } },
+        { label: "等一下", alt: true }]);
+      return talk("礦工老石", "礦燈＝2 個鐵礦＋1 個煤炭，在商店的工作台做。拜託你了！");
+    }
+    if (npcQuiz(e, "礦工老石")) return;
+    return talk("礦工老石", pick(NPC_IDLE.miner));
   }
   if (e.id === "fox") {
     if (st === 7 && !S.main.foxStarted) return talk("小狐狸", ["嗚嗚……我把 3 個寶物弄丟在森林裡了。", "地上會閃閃發光的就是！可以幫我找回來嗎？"], null, () => { S.main.foxStarted = true; markDirty(); toast("在森林裡找 3 個閃閃發光的寶物", "gold"); });
@@ -1422,27 +1681,77 @@ function startPractice() {
 }
 function openBench() {
   if (S.main.step < 6) return talk("工作台", "工作台壞掉了……修好商店之後，就能把材料做成更值錢的商品。");
-  const rows = RECIPES.map((r, i) => {
+  const list = RECIPES.map((r, i) => ({ r, i })).filter(({ r }) => !r.needMine || S.flags.mine);
+  const rows = list.map(({ r, i }) => {
     const it = ITEMS[r.out];
-    return `<div class="row"><img src="${icon(r.out)}" alt=""><div class="grow"><div class="t">${it.zh} <span class="muted">${it.en}</span></div>
+    return `<div class="row"><img src="${icon(r.out)}" alt=""><div class="grow"><div class="t">${it.zh} <span class="muted">${it.en}</span>${r.spell ? ` <span class="spell-badge">拼字</span>` : ""}</div>
       <div class="d">需要：${itemList(r.need)}・售價 ${it.price} 金・你有 ${S.inv[r.out] || 0} 個</div></div>
       <button class="btn small" data-act="mk${i}" ${has(r.need) ? "" : "disabled"}>製作</button></div>`;
   }).join("");
   const h = { __closable: true };
-  RECIPES.forEach((r, i) => {
+  const done = (r, n, why) => {
+    addItem(r.out, n); Sound.sfx("up");
+    toast(`製作完成：${ITEMS[r.out].zh} ×${n}${n > 1 ? `（${why}）` : ""}`, "gold");
+    popAt(13 * T + 8, 6 * T, r.out, `+${n}`);
+    questEvent("craft"); writeSave(); openBench();
+  };
+  list.forEach(({ r, i }) => {
     h["mk" + i] = () => {
       if (!has(r.need)) return;
       takeItems(r.need);
-      askQuestion("craft", {}, (res) => {
-        const n = res === "correct" && rand() < 0.3 ? 2 : 1;
-        addItem(r.out, n); Sound.sfx("up");
-        toast(`製作完成：${ITEMS[r.out].zh} ×${n}${n > 1 ? "（答對加成）" : ""}`, "gold");
-        popAt(13 * T + 8, 6 * T, r.out, `+${n}`);
-        questEvent("craft"); writeSave(); openBench();
-      });
+      if (r.spell) return spellChallenge(r.spell, r.out, (res) => done(r, res === "correct" && rand() < 0.5 ? 2 : 1, "拼字全對加成"));
+      askQuestion("craft", {}, (res) => done(r, res === "correct" && rand() < 0.3 ? 2 : 1, "答對加成"));
     };
   });
-  openModal(`${closeBtn}<h2>工作台</h2><p class="muted">把材料做成商品，賣得比材料更貴！</p><div class="list">${rows}</div>`, h);
+  openModal(`${closeBtn}<h2>工作台</h2><p class="muted">把材料做成商品，賣得比材料更貴！標著「拼字」的高級商品，要把字母排成正確的英文才做得出來。</p><div class="list">${rows}</div>`, h);
+}
+/* ---- 拼字工作台：點字母排成正確的英文單字 ----
+   第一次就拼對 → "correct"；拼錯可以再試一次（會提示第一個字母）；兩次都錯 → 顯示答案，回傳 "wrong"。
+   不論對錯都會做出商品（材料不會白費），拼對有機會多做一個。 */
+function spellChallenge(word, itemKey, cb) {
+  const letters = word.split("");
+  let tiles = shuffle(letters.map((ch, i) => ({ ch, i })));
+  for (let k = 0; k < 5 && tiles.map((t) => t.ch).join("") === word && word.length > 1; k++) tiles = shuffle(tiles);
+  let picked = [], tries = 0, locked = false, fb = "";
+  const it = ITEMS[itemKey];
+  const render = () => {
+    const slots = letters.map((_, k) => {
+      const t = picked[k] !== undefined ? tiles[picked[k]] : null;
+      return `<span class="spell-slot${t ? " on" : ""}">${t ? esc(t.ch) : ""}</span>`;
+    }).join("");
+    const btns = tiles.map((t, k) => `<button class="spell-tile" data-act="t${k}" ${picked.includes(k) || locked ? "disabled" : ""}>${esc(t.ch)}</button>`).join("");
+    const h = { say: () => speak(word, true), back: () => { if (!locked && picked.length) { picked.pop(); render(); } }, clear: () => { if (!locked) { picked = []; render(); } } };
+    tiles.forEach((_, k) => { h["t" + k] = () => { if (locked || picked.includes(k)) return; picked.push(k); Sound.sfx("click"); if (picked.length === letters.length) check(); else render(); }; });
+    openModal(`<span class="q-tag">拼字工作台</span><div class="spell-item"><img src="${icon(itemKey)}" alt=""><b>${esc(it.zh)}</b></div>
+      <div class="q-sub">把字母排成正確的英文 <button class="speak" data-act="say">聽發音</button></div>
+      <div class="spell-slots">${slots}</div>
+      <div class="spell-tiles">${btns}</div>
+      <div class="btn-row spell-ctl"><button class="btn alt small" data-act="back" ${locked || !picked.length ? "disabled" : ""}>退一格</button><button class="btn alt small" data-act="clear" ${locked || !picked.length ? "disabled" : ""}>重來</button></div>
+      <div class="q-feedback">${fb}</div>`, h);
+  };
+  const check = () => {
+    const ans = picked.map((k) => tiles[k].ch).join("");
+    locked = true;
+    if (ans === word) {
+      fb = `<span style="color:var(--good)">拼對了！${esc(word)} ＝ ${esc(it.zh)}</span>`;
+      render(); document.querySelectorAll(".spell-slot").forEach((el) => el.classList.add("ok"));
+      Sound.sfx("right"); speak(word); if (tries === 0) questEvent("correct");
+      return setTimeout(() => { closeModal(); cb(tries === 0 ? "correct" : "retry"); }, 1300);
+    }
+    tries++;
+    Sound.sfx("wrong");
+    if (tries < 2) {
+      fb = `<span style="color:var(--bad)">不對喔，再試一次！提示：第一個字母是「${esc(word[0])}」</span>`;
+      render(); document.querySelectorAll(".spell-slot").forEach((el) => el.classList.add("bad"));
+      return setTimeout(() => { picked = []; locked = false; fb = `<span class="muted">提示：第一個字母是「${esc(word[0])}」</span>`; render(); }, 1100);
+    }
+    fb = `<span style="color:var(--bad)">正確答案：${esc(word.split("").join("-"))}（${esc(it.zh)}）</span>`;
+    render(); document.querySelectorAll(".spell-slot").forEach((el) => el.classList.add("bad"));
+    speak(word);
+    setTimeout(() => { closeModal(); cb("wrong"); }, 2600);
+  };
+  render();
+  if (S.settings.speak) speak(word);
 }
 /* ---- 釣魚小遊戲 ---- */
 function goFishing() {
@@ -1596,7 +1905,7 @@ function gather(e) {
 }
 function doGather(e) {
   const def = NODE_KINDS[e.kind];
-  let qty = randInt(def.min, def.max) + upVal("tool");
+  let qty = randInt(def.min, def.max) + (def.noTool ? 0 : upVal("tool"));
   const finish = (res) => {
     if (res === "correct" && rand() < 0.25) qty++;
     if (res === "wrong") qty = Math.max(1, qty - 1);
@@ -1608,6 +1917,8 @@ function doGather(e) {
     toast(`+${qty} ${ITEMS[def.item].zh}${res === "correct" ? "（答對加成）" : ""}`, "good");
     questEvent("gather", def.item, qty);
     if (S.main.step === 1 && def.item === "wood") advanceMain(2);
+    if (S.main.step === 19 && def.item === "iron" && (S.inv.iron || 0) >= 3) { advanceMain(20); talk("礦工的筆記", "你在地上撿到一張紙條：\n「礦車壞了，鐵軌也斷了……要 5 個鐵礦和 10 個木材才修得好。我先往深處走了。——老石」"); }
+    if (S.main.step === 23 && def.item === "gem") { advanceMain(24); talk("礦工老石", "挖到寶石了！把寶石和鐵礦做成寶石戒指（ring），送給村長當禮物吧！"); }
     if (S.main.step === 11 && def.item === "shell" && (S.inv.shell || 0) >= 5) { advanceMain(12); toast("貝殼收集好了！去找漁夫阿海", "gold"); }
     if (S.main.step === 9 && def.item === "honey") { advanceMain(10); talk("村長的信", "聽說你拿到森林深處的蜂蜜了！你已經是村子裡最棒的商店老闆。這是獎勵：100 金！", null, () => giveReward({ coins: 100 })); }
     writeSave();
@@ -1650,7 +1961,7 @@ function skipTo(target) {
       S.min = t + step; growFarm(step);
       if (gameDay() !== S.counters.day) ensureDaily();
       if (shopOpen() && S.min >= S.nextCustomer) {
-        S.nextCustomer = S.min + randInt(35, 60) * (S.flags.repaired ? 0.85 : 1) * (1 - 0.06 * upVal("decor"));
+        S.nextCustomer = S.min + CUSTOMER_GAP() * (S.flags.repaired ? 0.85 : 1) * (1 - 0.06 * upVal("decor"));
         const stocked = stockedSlots();
         if (S.counters.sales < MAX_SALES_PER_DAY && stocked.length) { const i = pick(stocked); if (willBuy(i)) { const c0 = S.coins; sell(i, false, 1, true); sold++; earned += S.coins - c0; } }
       }
@@ -1663,14 +1974,21 @@ function skipTo(target) {
 
 /* ---------------- 商店：貨架、顧客 ---------------- */
 const slotUnlocked = (i) => i < upVal("shelfSlots");
-const buyChance = (price, base) => clamp(0.9 - 0.5 * (price / base - 0.5), 0.05, 0.95);
-function priceMood(price, base) { const r = price / base; return r <= 0.8 ? ["便宜", "var(--good)"] : r <= 1.3 ? ["合理", "var(--ink)"] : ["偏貴", "var(--bad)"]; }
+const TOO_EXPENSIVE = 1.5;   // 售價超過原價 1.5 倍 → 完全沒有人買
+const tooExpensive = (price, base) => price / base > TOO_EXPENSIVE;
+const buyChance = (price, base) => {
+  const r = price / base;
+  if (r > TOO_EXPENSIVE) return 0;
+  if (r <= 1) return clamp(0.9 - 0.25 * (r - 0.5), 0.05, 0.95);   // 原價以下：很好賣
+  return clamp(0.78 - 1.3 * (r - 1), 0.1, 0.95);                   // 比原價貴：越貴越難賣
+};
+function priceMood(price, base) { const r = price / base; return r > TOO_EXPENSIVE ? ["太貴了！完全賣不出去", "var(--bad)"] : r <= 0.8 ? ["便宜", "var(--good)"] : r <= 1.15 ? ["合理", "var(--ink)"] : ["偏貴", "var(--bad)"]; }
 function openShelf(i, stage = null) {
   if (!slotUnlocked(i)) return toast("這格貨架還不能用，找工匠升級「貨架格數」");
   const sl = S.shelves[i], cap = upVal("shelfCap");
   const parts = [`${closeBtn}<h2>貨架 ${i + 1}</h2>`];
   const priceBox = (price, base) => { const [mood, col] = priceMood(price, base); return `<h3>售價</h3><div class="price-ctl"><button class="btn small" data-act="pdown">－</button>
-      <div class="price-val">${price} 金<br><small style="color:${col}">${mood}・約 ${Math.round(buyChance(price, base) * 100)}% 會買</small></div>
+      <div class="price-val">${price} 金<br><small style="color:${col}">${tooExpensive(price, base) ? `<b>${mood}</b>（0% 會買）` : `${mood}・約 ${Math.round(buyChance(price, base) * 100)}% 會買`}</small></div>
       <button class="btn small" data-act="pup">＋</button></div>`; };
   const nextPrice = (price, base, d) => clamp(Math.round(price + d * Math.max(1, Math.round(base * 0.1))), Math.ceil(base * 0.5), base * 2);
   const h = { __closable: true };
@@ -1692,7 +2010,7 @@ function openShelf(i, stage = null) {
       confirm: () => {
         const n = Math.min(stage.n, S.inv[stage.item] || 0, cap); if (n <= 0) return;
         sl.item = stage.item; sl.lastItem = stage.item; sl.qty = n; sl.price = stage.price; addItem(stage.item, -n);
-        closeModal(); toast(`上架完成：${it.zh} ×${n}，一個 ${stage.price} 金`, "good"); afterStock(); writeSave();
+        closeModal(); toast(`上架完成：${it.zh} ×${n}，一個 ${stage.price} 金`, "good"); if (tooExpensive(stage.price, it.price)) setTimeout(() => toast(`${it.zh}定價太高，不會有人買！把價格調低一點`, "bad"), 600); afterStock(); writeSave();
       },
     });
   } else if (sl.item && sl.qty > 0) {
@@ -1729,7 +2047,7 @@ function stockedSlots() { return S.shelves.map((s, i) => i).filter((i) => slotUn
 function updateCustomers(dt) {
   const tutorialRush = S.tutorialSale && S.main.step === 3;
   if ((shopOpen() || tutorialRush) && S.min >= S.nextCustomer) {
-    const gap = randInt(35, 60) * (S.flags.repaired ? 0.85 : 1) * (1 - 0.06 * upVal("decor"));
+    const gap = CUSTOMER_GAP() * (S.flags.repaired ? 0.85 : 1) * (1 - 0.06 * upVal("decor"));
     S.nextCustomer = S.min + gap;
     if (S.counters.sales < MAX_SALES_PER_DAY) spawnCustomer();
   }
@@ -1777,12 +2095,14 @@ function customerNext(c) {
   if (c.phase === "in") { c.phase = "look"; c.dir = "up"; c.wait = 1.2; c.bubble = "..."; return; }
   if (c.phase === "look") {
     const has = c.slot !== null && S.shelves[c.slot].item && S.shelves[c.slot].qty > 0;
-    c.wishMet = Boolean(c.wish && has && S.shelves[c.slot].item === c.wish);
+    const pricey = has && tooExpensive(S.shelves[c.slot].price, ITEMS[S.shelves[c.slot].item].price);
+    c.wishMet = Boolean(c.wish && has && !pricey && S.shelves[c.slot].item === c.wish);
     const ok = has && (c.wishMet || (!c.wish && willBuy(c.slot)));
     if (ok) { c.phase = "pay"; c.bubble = c.wishMet ? "♥" : null; c.path = [{ x: 8.5 * T, y: c.y }, { x: 8.5 * T, y: 4.9 * T }, { x: 12.5 * T, y: 4.9 * T }]; }
     else {
       c.phase = "out"; c.bubble = "?"; c.path = [{ x: 8.5 * T, y: c.y }, { x: 8.5 * T, y: 9.8 * T }, { x: 7.5 * T, y: 11.2 * T }];
-      if (c.wish) toast(`顧客想買「${ITEMS[c.wish].zh}」，可惜貨架上沒有……`, "bad");
+      if (pricey) { c.bubble = "!"; say(c, "太貴了！", 2.5); toast(`顧客：「${ITEMS[S.shelves[c.slot].item].zh}太貴了，我不買！」`, "bad"); }
+      else if (c.wish) toast(`顧客想買「${ITEMS[c.wish].zh}」，可惜貨架上沒有……`, "bad");
     }
     return;
   }
@@ -2023,7 +2343,8 @@ joyZone.addEventListener("pointerup", joyEnd); joyZone.addEventListener("pointer
 $("btn-a").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); Sound.startMusic(); if (!modalOpen()) interact(currentTarget); });
 document.querySelectorAll("#menu-btns button").forEach((b) => b.addEventListener("click", () => {
   Sound.init(); Sound.sfx("click");
-  ({ bag: openBag, quests: openQuests, words: openWords, settings: openSettings, help: () => openHelp() })[b.dataset.open]();
+  ({ bag: openBag, quests: openQuests, words: openWords, settings: openSettings, help: () => openHelp(),
+     logout: () => talk("登出", "要存檔並登出嗎？\n下次點自己的名字，就能從現在的進度繼續玩。", [{ label: "存檔並登出", fn: logout }, { label: "繼續玩", alt: true }]) })[b.dataset.open]();
 }));
 
 /* ---------------- 動物入侵：警報 → 拿武器把動物趕出村子 ---------------- */
@@ -2202,7 +2523,18 @@ function applyFlags() {
   const t = S.flags.bridge ? TILE.BRIDGE : TILE.BROKEN;
   rect(f, 36, 16, 37, 17, t); rebuildSolid(f);
   const v = scenes.village;
-  if (v) { rect(v, 30, 23, 31, 23, S.flags.beach ? TILE.PATH : TILE.FENCE); const sg = v.ents.find((e) => e.id === "sign_beach"); if (sg) sg.text = S.flags.beach ? "↓ 海邊" : "↓ 海邊（存到 300 金，找村長開通）"; rebuildSolid(v); }
+  if (v) {
+    rect(v, 30, 23, 31, 23, S.flags.beach ? TILE.PATH : TILE.FENCE); const sg = v.ents.find((e) => e.id === "sign_beach"); if (sg) sg.text = S.flags.beach ? "↓ 海邊" : "↓ 海邊（存到 300 金，找村長開通）";
+    rect(v, 35, 0, 36, 0, S.flags.mine ? TILE.PATH : TILE.TREE); rect(v, 35, 1, 36, 1, S.flags.mine ? TILE.PATH : TILE.ROCK);
+    const sm = v.ents.find((e) => e.id === "sign_mine"); if (sm) sm.text = S.flags.mine ? "↑ 老礦坑" : "↑ 老礦坑（入口被大石頭擋住了）";
+    rebuildSolid(v);
+  }
+  const m = scenes.mine;
+  if (m) {
+    rect(m, 17, 10, 18, 12, S.flags.cart ? TILE.RAIL : TILE.RAILBROKEN);
+    const sd = m.ents.find((e) => e.id === "sign_deep"); if (sd) sd.text = S.flags.cart ? "↑ 礦坑深處" : "↑ 礦坑深處（鐵軌壞了，要先修好礦車）";
+    rebuildSolid(m);
+  }
 }
 function blocked(px, py) {
   const pts = [[px - 5, py - 5], [px + 5, py - 5], [px - 5, py - 1], [px + 5, py - 1]];
@@ -2220,7 +2552,7 @@ function entVisible(e) {
   if (e.type === "lost") return S.main.step === 7 && S.main.foxStarted && !S.main.found[e.idx];
   return true;
 }
-const INTERACTIVE = new Set(["npc", "node", "shelf", "counter", "bed", "board", "sign", "lost", "bench", "dock", "plot", "clock", "stall", "bikes"]);
+const INTERACTIVE = new Set(["npc", "node", "shelf", "counter", "bed", "board", "sign", "lost", "bench", "dock", "plot", "clock", "stall", "bikes", "cart"]);
 function findTarget() {
   const an = animalInRange(); if (an) return { type: "animal", a: an, tx: an.x / T - 0.5, ty: an.y / T - 1, w: 1, h: 1 };
   const [vx, vy] = DIRV[player.dir];
@@ -2237,7 +2569,7 @@ function findTarget() {
   }
   return best;
 }
-const A_LABEL = { stall: "種子店", bikes: "車行", animal: "攻擊", npc: "對話", shelf: "貨架", counter: "收銀台", bed: "睡覺", board: "任務板", sign: "看看", lost: "撿起", bench: "製作", dock: "釣魚", bed: "休息", clock: "時鐘" };
+const A_LABEL = { cart: "礦車", stall: "種子店", bikes: "車行", animal: "攻擊", npc: "對話", shelf: "貨架", counter: "收銀台", bed: "睡覺", board: "任務板", sign: "看看", lost: "撿起", bench: "製作", dock: "釣魚", bed: "休息", clock: "時鐘" };
 function targetLabel(e) {
   if (!e) return "互動";
   if (e.type === "node") return e.kind === "chest" ? "打開" : NODE_KINDS[e.kind].verb;
@@ -2254,6 +2586,9 @@ function objectiveText() {
   if (st === 5) return `${MAIN[5]}（木材 ${Math.min(15, S.inv.wood || 0)}/15）`;
   if (st === 7 && S.main.foxStarted) return `幫小狐狸找寶物（${S.main.found.filter(Boolean).length}/3）${S.main.found.every(Boolean) ? "→ 回去找小狐狸" : ""}`;
   if (st === 8) return `${MAIN[8]}（木材 ${Math.min(25, S.inv.wood || 0)}/25・草藥 ${Math.min(8, S.inv.herb || 0)}/8）`;
+  if (st === 18) return `${MAIN[18]}（金 ${Math.min(300, S.coins)}/300・木材 ${Math.min(20, S.inv.wood || 0)}/20）`;
+  if (st === 19) return `${MAIN[19]}（${Math.min(3, S.inv.iron || 0)}/3）`;
+  if (st === 20) return `${MAIN[20]}（鐵礦 ${Math.min(5, S.inv.iron || 0)}/5・木材 ${Math.min(10, S.inv.wood || 0)}/10）`;
   return MAIN[Math.min(st, MAIN.length - 1)];
 }
 function objectiveHint() {
@@ -2265,12 +2600,16 @@ function objectiveHint() {
   if (st === 5 && (S.inv.wood || 0) >= 15) return "木材夠了！回村子交給村長";
   if (st === 8 && has({ wood: 25, herb: 8 })) return "材料夠了！回村子找工匠，按「對話」";
   if (st === 6 && S.coins < 100) return "錢還不夠 100 金：去森林採東西，放上貨架賣錢";
+  if (st === 18 && S.coins >= 300 && (S.inv.wood || 0) >= 20) return "都準備好了！去找工匠阿木，按「對話」";
+  if (st === 20 && has({ iron: 5, wood: 10 })) return "材料夠了！到礦坑裡的礦車旁按「礦車」";
+  if (st === 22 && (S.inv.lamp || 0) >= 1) return "礦燈做好了！到礦坑深處拿給礦工老石";
+  if (st === 24 && (S.inv.ring || 0) >= 1) return "戒指做好了！回村子拿給村長";
   return MAIN_HINT[st];
 }
 function objectiveTarget() {
   const st = S.main.step, find = (sc, id) => ({ sc, e: scenes[sc].ents.find((x) => x.id === id) });
   const nearestNode = (kind, sc = "forest") => {
-    const list = scenes[sc].ents.filter((e) => e.type === "node" && e.kind === kind && nodeReady(e));
+    const list = scenes[sc].ents.filter((e) => e.type === "node" && e.kind === kind && nodeReady(e) && (!e.deep || S.flags.cart));
     if (!list.length) return null;
     const px = scene.name === sc ? player.x : scenes[sc].spawn.tx * T, py = scene.name === sc ? player.y : scenes[sc].spawn.ty * T;
     list.sort((a, b) => Math.hypot(entCenter(a).x - px, entCenter(a).y - py) - Math.hypot(entCenter(b).x - px, entCenter(b).y - py));
@@ -2301,6 +2640,14 @@ function objectiveTarget() {
     case 12: return find("beach", "fisherman");
     case 13: return find("village", "craft");
     case 15: return find("village", "mayor");
+    case 17: return find("village", "craft");
+    case 18: return S.coins >= 300 && (S.inv.wood || 0) >= 20 ? find("village", "craft") : (S.inv.wood || 0) < 20 ? nearestNode("tree") : null;
+    case 19: return nearestNode("iron", "mine");
+    case 20: return has({ iron: 5, wood: 10 }) ? find("mine", "cart") : (S.inv.iron || 0) < 5 ? nearestNode("iron", "mine") : nearestNode("tree");
+    case 21: return find("mine", "miner");
+    case 22: return (S.inv.lamp || 0) >= 1 ? find("mine", "miner") : has({ iron: 2, coal: 1 }) ? find("shop", "bench") : (S.inv.iron || 0) < 2 ? nearestNode("iron", "mine") : nearestNode("coal", "mine");
+    case 23: return nearestNode("gem", "mine");
+    case 24: return (S.inv.ring || 0) >= 1 ? find("village", "mayor") : has({ gem: 1, iron: 1 }) ? find("shop", "bench") : (S.inv.gem || 0) < 1 ? nearestNode("gem", "mine") : nearestNode("iron", "mine");
     case 16: return (S.inv.necklace || 0) >= 1 ? find("beach", "fisherman") : has({ shell: 3, flower: 1 }) ? find("shop", "bench") : (S.inv.shell || 0) < 3 ? nearestNode("shell", "beach") : nearestNode("flower", "village");
     default: return null;
   }
@@ -2324,6 +2671,38 @@ function resize() {
   g.imageSmoothingEnabled = false;
 }
 addEventListener("resize", resize);
+
+/* ---------------- 平板防誤觸放大 ----------------
+   iPad Safari 會忽略 user-scalable=no，連點兩下或兩指捏合仍會放大。
+   這裡擋掉：雙擊放大、捏合放大；萬一還是放大了，自動縮回原本大小。 */
+(() => {
+  const isField = (el) => el && el.closest && el.closest("input,textarea,select,[contenteditable]");
+  // 1) 擋捏合手勢（iOS）
+  for (const ev of ["gesturestart", "gesturechange", "gestureend"]) document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+  // 2) 兩指以上觸控一律不放大
+  document.addEventListener("touchmove", (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  // 3) 擋「連點兩下放大」：很快的第二下不讓瀏覽器放大，也不算點擊（避免誤觸連跳對話、連按答案）。
+  //    例外：數量／價格的 ＋－ 按鈕、拼字的字母方塊可以快速連按。
+  let lastEnd = 0;
+  document.addEventListener("touchend", (e) => {
+    const now = Date.now(), quick = now - lastEnd < 350; lastEnd = now;
+    if (!quick || e.touches.length || isField(e.target)) return;
+    e.preventDefault();
+    const btn = e.target.closest && e.target.closest(".price-ctl button, .spell-tile, .spell-ctl button");
+    if (btn && !btn.disabled) btn.click();
+  }, { passive: false });
+  document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
+  // 4) 萬一已經被放大：自動縮回 1 倍
+  const meta = document.querySelector("meta[name=viewport]"), base = meta.content;
+  const unzoom = () => {
+    const vv = window.visualViewport; if (!vv || vv.scale <= 1.01) return;
+    meta.content = base + ",minimum-scale=1";
+    setTimeout(() => { meta.content = base; window.scrollTo(0, 0); resize(); }, 60);
+  };
+  // 只在畫面大小真的改變、或手指離開螢幕時才檢查，不用每秒輪詢
+  if (window.visualViewport) visualViewport.addEventListener("resize", unzoom);
+  document.addEventListener("touchend", () => setTimeout(unzoom, 300), { passive: true });
+})();
 let clock = 0;
 function drawEnt(e, cx, cy) {
   const x = e.tx * T - cx, y = e.ty * T - cy;
@@ -2385,6 +2764,13 @@ function drawEnt(e, cx, cy) {
       P(g, x + 4, y - 1, "#8a8a9a", 8, 3); P(g, x + 7, y - 4, "#6b4226", 2, 4);
       P(g, x + 15, y - 4, "#c0284a", 5, 6); P(g, x + 15, y - 5, "#f4e9d0", 5, 1); P(g, x + 23, y - 1, "#e8e0d0", 6, 3);
       if (S.main.step < 6) { P(g, x + 12, y + 5, "#2b1d14", 1, 7); P(g, x + 13, y + 7, "#2b1d14", 2, 1); P(g, x + 20, y + 8, "#2b1d14", 4, 1); }
+      return;
+    }
+    case "cart": {   // 礦車：壞掉時歪一邊、少一個輪子
+      const ok = S.flags.cart, tilt = ok ? 0 : 2;
+      P(g, x + 1, y + 3 + tilt, "#4a3e36", 14, 8); P(g, x + 2, y + 4 + tilt, "#8a6a4a", 12, 6); P(g, x + 1, y + 3 + tilt, "#6a5a4a", 14, 2);
+      if (ok) { P(g, x + 3, y + 1, "#3a3a46", 4, 3); P(g, x + 8, y, "#c8743a", 4, 4); }
+      circle(g, x + 4, y + 13, 2, "#2b1d14"); if (ok) circle(g, x + 12, y + 13, 2, "#2b1d14"); else P(g, x + 11, y + 14, "#2b1d14", 3, 2);
       return;
     }
     case "plant": { P(g, x + 4, y + 10, "#a0583a", 8, 6); circle(g, x + 8, y + 7, 5, "#3f8a45"); circle(g, x + 6, y + 5, 2, "#58b368"); return; }
@@ -2467,6 +2853,14 @@ function drawNode(e, x, y) {
       P(g, x + 4, y + 11, "#e8a898", 9, 2); P(g, x + 6, y + 8, "#d88878", 1, 3); P(g, x + 10, y + 8, "#d88878", 1, 3);
       if (Math.sin(clock * 3 + e.tx) > 0.85) P(g, x + 12, y + 6, "#ffffff");
       return;
+    case "coal": case "iron": case "gem": {
+      if (!ready) { P(g, x + 4, y + 11, "#4a3e36", 3, 2); P(g, x + 9, y + 12, "#4a3e36", 3, 2); return; }
+      circle(g, x + 8, y + 9, 6, "#4a4450"); P(g, x + 2, y + 10, "#4a4450", 13, 5); circle(g, x + 7, y + 8, 4, "#6a6470"); P(g, x + 5, y + 5, "#8a8490", 3, 1);
+      if (e.kind === "coal") for (const [a, b] of [[5, 9], [9, 7], [10, 11], [6, 12]]) P(g, x + a, y + b, "#16161c", 2, 2);
+      if (e.kind === "iron") for (const [a, b] of [[5, 9], [9, 7], [10, 11], [6, 12]]) { P(g, x + a, y + b, "#c8743a", 2, 2); P(g, x + a, y + b, "#f0a868"); }
+      if (e.kind === "gem") { P(g, x + 6, y + 6, "#3ac8e0", 3, 4); P(g, x + 10, y + 9, "#1a9ab8", 2, 3); P(g, x + 4, y + 10, "#7ae0f0", 2, 2); if (Math.sin(clock * 4 + e.tx) > 0.5) P(g, x + 7, y + 6, "#ffffff"); }
+      return;
+    }
     case "chest":
       P(g, x + 2, y + 5, "#6b3a1a", 12, 10); P(g, x + 2, y + 5, "#8b5a2b", 12, 4); P(g, x + 2, y + 9, "#e0b040", 12, 1); P(g, x + 7, y + 8, "#ffe080", 2, 3);
       if (!ready) { P(g, x + 2, y + 1, "#8b5a2b", 12, 4); P(g, x + 3, y + 5, "#2b1d14", 10, 2); }
@@ -2642,7 +3036,7 @@ function render() {
   let cy = clamp(Math.round(player.y - 8 - VH / 2), 0, Math.max(0, scene.h * T - VH)) - (scene.h * T < VH ? Math.floor((VH - scene.h * T) / 2) : 0);
   if (shakeT > 0) { cx += rand() < 0.5 ? -1 : 1; cy += rand() < 0.5 ? -1 : 1; }
   cam.x = cx; cam.y = cy;
-  g.fillStyle = scene.name === "shop" ? "#1a1410" : "#24522a"; g.fillRect(0, 0, VW, VH);
+  g.fillStyle = scene.name === "shop" || scene.name === "mine" ? "#1a1410" : "#24522a"; g.fillRect(0, 0, VW, VH);
   const x0 = Math.max(0, Math.floor(cx / T)), y0 = Math.max(0, Math.floor(cy / T));
   const x1 = Math.min(scene.w - 1, Math.floor((cx + VW) / T)), y1 = Math.min(scene.h - 1, Math.floor((cy + VH) / T));
   const wf = Math.floor(clock * 2) % 2;
@@ -2687,6 +3081,7 @@ function render() {
   else if (h >= 21 || h < 5) dark = 0.5;
   else if (h >= 5 && h < 6) dark = 0.5 * (6 - h);
   if (!scene.outdoor) { dark *= 0.4; warm *= 0.5; }
+  if (scene.name === "mine") dark = Math.max(dark, 0.18);   // 礦坑裡比較暗
   if (warm) { g.fillStyle = `rgba(255,120,40,${warm})`; g.fillRect(0, 0, VW, VH); }
   if (dark) { g.fillStyle = `rgba(16,20,60,${dark})`; g.fillRect(0, 0, VW, VH); }
   if (scene.name === "forest" && dark > 0.3) for (let i = 0; i < 18; i++) { const fx = ((i * 97 + clock * 9 * (i % 3 + 1)) % (scene.w * T)) - cx, fy = ((i * 53 + Math.sin(clock + i) * 20) % (scene.h * T)) - cy; if (Math.sin(clock * 3 + i) > 0) P(g, Math.round(fx), Math.round(fy), "#f8f080", 1, 1); }
@@ -2825,6 +3220,7 @@ cv.addEventListener("pointerdown", (ev) => {
 });
 
 function updateHud() {
+  const hh = $("hud").offsetHeight; if (hh && hh !== updateHud.hh) { updateHud.hh = hh; document.documentElement.style.setProperty("--hud-h", hh + 8 + "px"); }
   if (!S) return;
   $("hud-coins").textContent = S.coins;
   $("hud-time").textContent = timeLabel() + (shopOpen() ? "・營業中" : "・打烊");
@@ -2850,7 +3246,7 @@ function startGame(save) {
   for (const k of Object.keys(base)) if (S[k] === undefined) S[k] = base[k];
   for (const k of Object.keys(UPGRADES)) if (!S.up[k]) S.up[k] = 1;
   while (S.farm.length < FARM_PLOTS) S.farm.push({ c: null, g: 0, wet: false, dry: false });
-  scenes.village = buildVillage(); scenes.forest = buildForest(); scenes.shop = buildShop(); scenes.beach = buildBeach(); applyFlags();
+  scenes.village = buildVillage(); scenes.forest = buildForest(); scenes.shop = buildShop(); scenes.beach = buildBeach(); scenes.mine = buildMine(); applyFlags();
   raid = null; speeches.length = 0; $("bubbles").innerHTML = "";
   ensureDaily();
   enterScene(S.scene in scenes ? S.scene : "village", S.x / T, S.y / T, S.dir);
