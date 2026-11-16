@@ -1581,6 +1581,8 @@ function talkNpc(e) {
         { label: "先升級工具", fn: openUpgrades }, { label: "等一下", alt: true }]);
       return talk("工匠阿木", `修橋需要 25 個木材和 8 個草藥。\n你現在有木材 ${S.inv.wood || 0}、草藥 ${S.inv.herb || 0}。`, [{ label: "看看升級", fn: openUpgrades }, { label: "好", alt: true }]);
     }
+    // 先買過武器的學生不用再買，直接進入保衛村莊
+    if (st === 13 && S.weapon) return talk("工匠阿木", `你已經有${WEAPONS[S.weapon].name}了，很好！\n動物要來了，準備保護村子！`, null, () => advanceMain(14));
     if (st === 13) return talk("工匠阿木", "要保護村子？那你需要一把武器！", [{ label: "買武器", fn: openWeapons }, { label: "等一下", alt: true }]);
     if (st === 17) return talk("工匠阿木", ["喔，大英雄來啦！你聽說了嗎？", "村子北邊的山裡有一座老礦坑，以前大家在那裡挖鐵礦（iron）和寶石（gem）。", "後來入口被一顆大石頭堵住，就沒人進去了。", "只要 300 金和 20 個木材，我就能把石頭搬開，把礦坑打通！"], null, () => advanceMain(18));
     if (st === 18) {
@@ -1589,6 +1591,8 @@ function talkNpc(e) {
         { label: "等一下", alt: true }]);
       return talk("工匠阿木", `打通礦坑需要 300 金和 20 個木材。\n你現在有 ${S.coins} 金、木材 ${S.inv.wood || 0} 個。`, [{ label: "看看升級", fn: openUpgrades }, { label: "好", alt: true }]);
     }
+    // 貨架格數已經升到最高級，就沒辦法再升級完成任務
+    if (st === 6 && S.up.shelfSlots >= UPGRADES.shelfSlots.values.length) return talk("工匠阿木", "你的貨架已經是最高級了！這個任務算你完成。", null, () => advanceMain(7));
     return talk("工匠阿木", pick(NPC_IDLE.craft), [{ label: "我要升級", fn: openUpgrades }, { label: "買武器", fn: openWeapons }, { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "工匠阿木")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
   }
   if (e.id === "granny") {
@@ -2400,10 +2404,11 @@ function endRaid() {
   const msg = r.ate ? `警報解除。趕走 ${r.scared} 隻動物，被偷了 ${r.ate} 次。` : `警報解除！你趕走了 ${r.scared} 隻動物，村子很安全！`;
   toast(msg, r.ate ? "" : "gold");
   if (!r.ate && r.scared) { const bonus = 10 + r.scared * 3; setTimeout(() => { giveReward({ coins: bonus }); toast(`村民送你謝禮 ${bonus} 金`, "gold"); }, 900); }
-  if (S.main.step === 14) setTimeout(() => advanceMain(15), 1500);
+  if (S.main.step === 14) advanceMain(15);
   writeSave();
 }
 function maybeScheduleRaid() {
+  if (S.main.step === 14) return startRaid(true);   // 主線的入侵沒有存檔，重新整理或重新登入後要再來一次
   if (S.main.step < 15) return;
   const day0 = gameDay() * DAY;
   if (S.nextRaid === null || S.nextRaid === undefined || S.nextRaid < day0) {
