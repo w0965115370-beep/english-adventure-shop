@@ -588,7 +588,7 @@ const ITEMS = {
   shorts:   { zh: "短褲", en: "shorts", price: 55,  crafted: true },
   dress:    { zh: "洋裝", en: "dress",  price: 95,  crafted: true },
   jacket:   { zh: "夾克", en: "jacket", price: 110, crafted: true },
-  coat:     { zh: "大衣", en: "coat",   price: 150, crafted: true },
+  coat:     { zh: "外套", en: "coat",   price: 150, crafted: true },
 };
 // 英文訂單用：[單數, 複數]
 const PHRASE = {
@@ -733,8 +733,8 @@ const MAIN = [
   "做一件短褲（shorts），送給森林的小狐狸",
   "做一件洋裝（dress），送給雜貨婆婆",
   "做一件夾克（jacket），送給海邊的漁夫阿海",
-  "做一件大衣（coat），送給礦坑深處的礦工老石",
-  "穿上（wear）夾克或大衣，去找村長參加冬日祭典",
+  "做一件外套（coat），送給礦坑深處的礦工老石",
+  "穿上（wear）夾克或外套，去找村長參加冬日祭典",
   "主線完成！做衣服、挖礦、保護村莊",
 ];
 const SEED_SHOP = "綠芽種子店";
@@ -803,8 +803,8 @@ const MAIN_HINT = [
   "短褲＝2 塊布，在工作台拼出 s-h-o-r-t-s，再拿到森林給小狐狸",
   "洋裝＝3 塊布＋2 朵野花，在工作台拼出 d-r-e-s-s，再拿給雜貨婆婆",
   "夾克＝3 塊布＋1 個鐵礦，在工作台拼出 j-a-c-k-e-t，再拿到海邊給漁夫阿海",
-  "大衣＝4 塊布＋2 個貝殼，在工作台拼出 c-o-a-t，再拿到礦坑深處給礦工老石",
-  "給自己做一件夾克或大衣，打開背包按「穿上 wear」，再去找村長",
+  "外套＝4 塊布＋2 個貝殼，在工作台拼出 c-o-a-t，再拿到礦坑深處給礦工老石",
+  "給自己做一件夾克或外套，打開背包按「穿上 wear」，再去找村長",
   "打開右上角「任務」做每日任務；聽到警報就回村子趕走動物！",
 ];
 
@@ -1544,7 +1544,7 @@ const NPC_IDLE = {
   fox: ["嗚嗚～（小狐狸搖搖尾巴）", "森林深處有好多蜂蜜喔！"],
   wheel: ["騎車跑得快，送貨更方便！", "Bike 就是腳踏車，Horse 是馬喔！", "存夠錢就來買一台吧！"],
   fisherman: ["海風好舒服啊～", "Shell 就是貝殼，Coconut 是椰子。", "聽到警報要趕快回村子喔！"],
-  tailor: ["Shirt 是襯衫，Shorts 是短褲，Dress 是洋裝！", "Jacket 是夾克，Coat 是大衣。冬天要穿暖一點喔！", "「穿」的英文是 wear：I wear a coat."],
+  tailor: ["Shirt 是襯衫，Shorts 是短褲，Dress 是洋裝！", "Jacket 是夾克，Coat 是外套。冬天要穿暖一點喔！", "「穿」的英文是 wear：I wear a coat."],
   miner: ["Iron 是鐵，Coal 是煤炭，Gem 是寶石！", "礦坑裡要小心腳下喔。", "寶石做成皇冠（crown），可以賣好多錢！"],
 };
 function interact(e) {
@@ -1630,8 +1630,8 @@ function talkNpc(e) {
     }
     if (st === 25) return talk("村長", ["呼……天氣越來越冷了。", "下個星期村子要舉辦冬日祭典（Winter Festival），可是大家都沒有暖和的衣服。", "雜貨婆婆旁邊新開了一間裁縫店，裁縫師小線的手很巧。", "去找她學做衣服吧！"], null, () => advanceMain(26));
     if (st === 33) {
-      if (worn() === "coat" || worn() === "jacket") return talk("村長", [`Wow! You wear a warm ${worn()}! 你穿得好暖和！`, "冬日祭典開始囉！你看，小狐狸穿著短褲、婆婆穿著洋裝、阿海穿著夾克，老石也穿著大衣來了！", "大家都穿著你做的衣服，真是最棒的祭典！", "這是全村送你的謝禮：400 金！"], null, () => { giveReward({ coins: 400 }); Sound.sfx("up"); advanceMain(34); toast("第三章完成！冬日祭典大成功！", "gold"); });
-      return talk("村長", "祭典要穿暖和一點喔！給自己做一件夾克（jacket）或大衣（coat），\n打開背包按「穿上 wear」，再來找我。");
+      if (worn() === "coat" || worn() === "jacket") return talk("村長", [`Wow! You wear a warm ${worn()}! 你穿得好暖和！`, "冬日祭典開始囉！你看，小狐狸穿著短褲、婆婆穿著洋裝、阿海穿著夾克，老石也穿著外套來了！", "大家都穿著你做的衣服，真是最棒的祭典！", "這是全村送你的謝禮：400 金！"], null, () => { giveReward({ coins: 400 }); Sound.sfx("up"); advanceMain(34); toast("第三章完成！冬日祭典大成功！", "gold"); });
+      return talk("村長", "祭典要穿暖和一點喔！給自己做一件夾克（jacket）或外套（coat），\n打開背包按「穿上 wear」，再來找我。");
     }
     if (st === 15) return talk("村長", ["你把動物都趕走了，村子安全了！真是太感謝你了！", "這是全村送你的謝禮：100 金！", "對了，漁夫阿海一直很照顧大家。做一條貝殼項鍊送他吧！工作台就能做。"], null, () => { giveReward({ coins: 100 }); advanceMain(16); });
     if (npcQuiz(e, "村長")) return;
@@ -1660,7 +1660,7 @@ function talkNpc(e) {
   }
   if (e.id === "tailor") {
     if (st < 26) return talk("裁縫師小線", "你好！我是剛搬來的裁縫師小線。\n等天氣變冷，大家就會需要新衣服了！");
-    if (st === 26) return talk("裁縫師小線", ["你好！我是裁縫師小線。冬日祭典快到了，大家都需要暖和的衣服！", "衣服的英文有很多：shirt 襯衫、shorts 短褲、dress 洋裝、jacket 夾克、coat 大衣。", "「穿」衣服的英文是 wear。I wear a coat. 就是「我穿大衣」。", "送你 4 包棉花種子（cotton）。種在農田裡，收成之後在工作台做成布（cloth），就能做衣服了！"], null, () => { S.seeds.cotton = (S.seeds.cotton || 0) + 4; advanceMain(27); writeSave(); });
+    if (st === 26) return talk("裁縫師小線", ["你好！我是裁縫師小線。冬日祭典快到了，大家都需要暖和的衣服！", "衣服的英文有很多：shirt 襯衫、shorts 短褲、dress 洋裝、jacket 夾克、coat 外套。", "「穿」衣服的英文是 wear。I wear a coat. 就是「我穿外套」。", "送你 4 包棉花種子（cotton）。種在農田裡，收成之後在工作台做成布（cloth），就能做衣服了！"], null, () => { S.seeds.cotton = (S.seeds.cotton || 0) + 4; advanceMain(27); writeSave(); });
     if (st === 28) {
       if (worn() === "shirt") return talk("裁縫師小線", ["哇！You wear a nice shirt! 你穿襯衫好好看！", "這是謝禮：80 金。", "接下來幫村民們做衣服吧！先做一件短褲（shorts），送給森林裡的小狐狸。"], null, () => { giveReward({ coins: 80 }); Sound.sfx("up"); advanceMain(29); });
       if ((S.inv.shirt || 0) >= 1) return talk("裁縫師小線", "襯衫做好了！打開背包，按襯衫的「穿上 wear」，穿給我看看！");
@@ -1697,8 +1697,8 @@ function talkNpc(e) {
         { label: "等一下", alt: true }]);
       return talk("礦工老石", "礦燈＝2 個鐵礦＋1 個煤炭，在商店的工作台做。拜託你了！");
     }
-    if (st === 32) return (S.inv.coat || 0) >= 1 ? giftClothes("礦工老石", "coat", ["礦坑裡好冷，有大衣真是太好了！", "I wear a coat. Thank you! 謝謝你！"], 180)
-      : talk("礦工老石", "礦坑深處好冷啊……（大衣＝4 塊布＋2 個貝殼，在工作台做）");
+    if (st === 32) return (S.inv.coat || 0) >= 1 ? giftClothes("礦工老石", "coat", ["礦坑裡好冷，有外套真是太好了！", "I wear a coat. Thank you! 謝謝你！"], 180)
+      : talk("礦工老石", "礦坑深處好冷啊……（外套＝4 塊布＋2 個貝殼，在工作台做）");
     if (npcQuiz(e, "礦工老石")) return;
     return talk("礦工老石", pick(NPC_IDLE.miner));
   }
