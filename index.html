@@ -581,6 +581,14 @@ const ITEMS = {
   lamp:     { zh: "礦燈",     en: "lamp",  price: 60,  crafted: true },
   ring:     { zh: "寶石戒指", en: "ring",  price: 95,  crafted: true },
   crown:    { zh: "寶石皇冠", en: "crown", price: 230, crafted: true },
+  // 第三章：裁縫店
+  cotton:   { zh: "棉花", en: "cotton", price: 9 },
+  cloth:    { zh: "布",   en: "cloth",  price: 24,  crafted: true },
+  shirt:    { zh: "襯衫", en: "shirt",  price: 60,  crafted: true },
+  shorts:   { zh: "短褲", en: "shorts", price: 55,  crafted: true },
+  dress:    { zh: "洋裝", en: "dress",  price: 95,  crafted: true },
+  jacket:   { zh: "夾克", en: "jacket", price: 110, crafted: true },
+  coat:     { zh: "大衣", en: "coat",   price: 150, crafted: true },
 };
 // 英文訂單用：[單數, 複數]
 const PHRASE = {
@@ -594,7 +602,19 @@ const PHRASE = {
   tomatosoup: ["bowl of tomato soup", "bowls of tomato soup"], cake: ["strawberry cake", "strawberry cakes"], pie: ["pumpkin pie", "pumpkin pies"],
   coal: ["piece of coal", "pieces of coal"], iron: ["piece of iron", "pieces of iron"], gem: ["gem", "gems"],
   lamp: ["lamp", "lamps"], ring: ["ring", "rings"], crown: ["crown", "crowns"],
+  cotton: ["cotton ball", "cotton balls"], cloth: ["piece of cloth", "pieces of cloth"], shirt: ["shirt", "shirts"],
+  shorts: ["pair of shorts", "pairs of shorts"], dress: ["dress", "dresses"], jacket: ["jacket", "jackets"], coat: ["coat", "coats"],
 };
+// 第三章：可以穿上（wear）的衣服，穿上後角色的衣服顏色會改變
+const WEAR = {
+  shirt:  { look: { shirt: "#f4f4f8" }, say: "I wear a shirt." },
+  shorts: { look: { pants: "#3a7ad0" }, say: "I wear shorts." },
+  dress:  { look: { shirt: "#e07aa0", pants: "#e07aa0" }, say: "I wear a dress." },
+  jacket: { look: { shirt: "#3a8a5a" }, say: "I wear a jacket." },
+  coat:   { look: { shirt: "#8a5a3a", pants: "#8a5a3a" }, say: "I wear a coat." },
+};
+// 第三章：送衣服的主線步驟 → [衣服, 場景, 村民 id]
+const GIFTS = { 29: ["shorts", "forest", "fox"], 30: ["dress", "village", "granny"], 31: ["jacket", "beach", "fisherman"], 32: ["coat", "mine", "miner"] };
 // 作物：種子價格、成長時間（遊戲分鐘；現實 1 秒 = 1.2 分）、收成數量
 const CROPS = {
   carrot:     { seed: 4,  grow: 180,  yield: [1, 2] },
@@ -602,6 +622,7 @@ const CROPS = {
   strawberry: { seed: 8,  grow: 360,  yield: [1, 2] },
   sunflower:  { seed: 10, grow: 480,  yield: [1, 1] },
   pumpkin:    { seed: 15, grow: 1080, yield: [1, 1], needBridge: true },
+  cotton:     { seed: 6,  grow: 300,  yield: [1, 2], needStep: 26 },
 };
 const FARM_PLOTS = 12;
 const NUM_EN = ["zero", "one", "two", "three", "four", "five"];
@@ -619,6 +640,12 @@ const RECIPES = [
   { out: "lamp",       need: { iron: 2, coal: 1 }, spell: "lamp", needMine: true },
   { out: "ring",       need: { gem: 1, iron: 1 },  spell: "ring", needMine: true },
   { out: "crown",      need: { gem: 3, iron: 2 },  spell: "crown", needMine: true },
+  { out: "cloth",  need: { cotton: 2 }, needStep: 26 },
+  { out: "shirt",  need: { cloth: 2 }, spell: "shirt", needStep: 26 },
+  { out: "shorts", need: { cloth: 2 }, spell: "shorts", needStep: 26 },
+  { out: "dress",  need: { cloth: 3, flower: 2 }, spell: "dress", needStep: 26 },
+  { out: "jacket", need: { cloth: 3, iron: 1 }, spell: "jacket", needStep: 26 },
+  { out: "coat",   need: { cloth: 4, shell: 2 }, spell: "coat", needStep: 26 },
 ];
 const NODE_KINDS = {
   tree:     { item: "wood",     min: 1, max: 2, cd: 240,  verb: "砍樹" },
@@ -698,7 +725,17 @@ const MAIN = [
   "在工作台做一盞礦燈，拿給礦工老石",
   "在礦坑深處挖到 1 顆寶石",
   "做一枚寶石戒指，送給村長",
-  "主線完成！挖礦、做高級商品、保護村莊",
+  // ---- 第三章：冬日祭典 ----
+  "第三章：天氣變冷了，去找村長聊聊",
+  "去找新來的裁縫師小線",
+  "在農田種棉花，收成 4 個棉花",
+  "做一件襯衫（shirt），穿上（wear）給裁縫師小線看",
+  "做一件短褲（shorts），送給森林的小狐狸",
+  "做一件洋裝（dress），送給雜貨婆婆",
+  "做一件夾克（jacket），送給海邊的漁夫阿海",
+  "做一件大衣（coat），送給礦坑深處的礦工老石",
+  "穿上（wear）夾克或大衣，去找村長參加冬日祭典",
+  "主線完成！做衣服、挖礦、保護村莊",
 ];
 const SEED_SHOP = "綠芽種子店";
 // 交通工具：在戶外騎乘，移動更快
@@ -759,6 +796,15 @@ const MAIN_HINT = [
   "礦燈＝2 個鐵礦＋1 個煤炭。到商店工作台，把字母排成 l-a-m-p",
   "寶石在礦坑深處，閃著藍光的石頭就是",
   "戒指＝1 顆寶石＋1 個鐵礦，在工作台拼出 r-i-n-g，再拿給村長",
+  "跟著箭頭去找村長，按「對話」",
+  "裁縫師小線在雜貨婆婆的右邊，按「對話」",
+  "在農田播種棉花 → 澆水 → 收成。種子用完可以跟雜貨婆婆買",
+  "布＝2 個棉花；襯衫＝2 塊布，拼出 s-h-i-r-t。做好後打開背包按「穿上 wear」",
+  "短褲＝2 塊布，在工作台拼出 s-h-o-r-t-s，再拿到森林給小狐狸",
+  "洋裝＝3 塊布＋2 朵野花，在工作台拼出 d-r-e-s-s，再拿給雜貨婆婆",
+  "夾克＝3 塊布＋1 個鐵礦，在工作台拼出 j-a-c-k-e-t，再拿到海邊給漁夫阿海",
+  "大衣＝4 塊布＋2 個貝殼，在工作台拼出 c-o-a-t，再拿到礦坑深處給礦工老石",
+  "給自己做一件夾克或大衣，打開背包按「穿上 wear」，再去找村長",
   "打開右上角「任務」做每日任務；聽到警報就回村子趕走動物！",
 ];
 
@@ -868,6 +914,15 @@ function makeIcons() {
   ICONS.lamp = mk(16, 16, (g) => { P(g, 6, 1, "#5a5a6a", 4, 2); P(g, 5, 3, "#3a3a46", 6, 2); P(g, 4, 5, "#3a3a46", 8, 8); P(g, 5, 6, "#ffd84a", 6, 6); P(g, 7, 7, "#fff7c0", 2, 3); P(g, 4, 13, "#3a3a46", 8, 2); P(g, 1, 8, "#ffe08a66", 2, 2); P(g, 13, 8, "#ffe08a66", 2, 2); });
   ICONS.ring = mk(16, 16, (g) => { for (let a = 0; a < 20; a++) { const t = a / 20 * Math.PI * 2; P(g, Math.round(8 + Math.cos(t) * 5), Math.round(10 + Math.sin(t) * 4), "#e0b040", 1, 1); } P(g, 6, 2, "#3ac8e0", 4, 3); P(g, 7, 2, "#c8f8ff", 1, 1); P(g, 7, 5, "#c89a30", 2, 1); });
   ICONS.crown = mk(16, 16, (g) => { P(g, 2, 8, "#e0b040", 12, 5); P(g, 2, 4, "#e0b040", 2, 4); P(g, 7, 2, "#e0b040", 2, 6); P(g, 12, 4, "#e0b040", 2, 4); P(g, 2, 12, "#b08020", 12, 1); P(g, 7, 9, "#3ac8e0", 2, 2); P(g, 4, 10, "#e0284a", 1, 1); P(g, 11, 10, "#3ac8e0", 1, 1); P(g, 3, 8, "#fff0a0", 10, 1); });
+  // 第三章：棉花、布、衣服
+  ICONS.cotton = mk(16, 16, (g) => { P(g, 7, 9, "#6b4226", 2, 6); P(g, 4, 10, "#3f8a45", 8, 2); circle(g, 5, 7, 3, "#f4f4ec"); circle(g, 11, 7, 3, "#f4f4ec"); circle(g, 8, 4, 3, "#ffffff"); P(g, 6, 3, "#d8d8d0"); });
+  ICONS.cloth = mk(16, 16, (g) => { P(g, 2, 4, "#c8b8e8", 12, 9); P(g, 2, 4, "#e0d4f8", 12, 2); for (const y of [7, 10]) P(g, 2, y, "#a898d0", 12, 1); P(g, 12, 5, "#a898d0", 2, 8); });
+  const top = (g, c, d, h, sleeve) => { P(g, 4, 3, c, 8, h); P(g, 1, 3, c, 3, sleeve); P(g, 12, 3, c, 3, sleeve); P(g, 6, 2, d, 4, 2); P(g, 7, 4, d, 2, 2); };
+  ICONS.shirt = mk(16, 16, (g) => { top(g, "#f4f4f8", "#a8b8d0", 11, 5); for (const y of [7, 10, 13]) P(g, 8, y, "#a8b8d0"); });
+  ICONS.jacket = mk(16, 16, (g) => { top(g, "#3a8a5a", "#24603c", 11, 9); P(g, 8, 4, "#e0d080", 1, 10); P(g, 4, 13, "#24603c", 8, 1); });
+  ICONS.coat = mk(16, 16, (g) => { top(g, "#8a5a3a", "#5a3a20", 13, 10); for (const y of [6, 9, 12]) P(g, 7, y, "#e0c040", 2, 1); });
+  ICONS.shorts = mk(16, 16, (g) => { P(g, 3, 4, "#3a7ad0", 10, 4); P(g, 3, 8, "#3a7ad0", 4, 5); P(g, 9, 8, "#3a7ad0", 4, 5); P(g, 3, 4, "#2a5aa0", 10, 1); P(g, 8, 5, "#2a5aa0", 1, 3); });
+  ICONS.dress = mk(16, 16, (g) => { P(g, 5, 2, "#e07aa0", 1, 2); P(g, 10, 2, "#e07aa0", 1, 2); P(g, 5, 4, "#e07aa0", 6, 3); for (let i = 0; i < 8; i++) P(g, 5 - (i >> 1), 7 + i, "#e07aa0", 6 + (i >> 1) * 2, 1); P(g, 5, 7, "#b04a70", 6, 1); P(g, 7, 7, "#ffe080", 2, 1); });
   ICONS.coin = mk(16, 16, (g) => { circle(g, 8, 8, 6, "#b8860b"); circle(g, 8, 8, 5, "#f2c230"); P(g, 7, 4, "#fff3b0", 2, 8); P(g, 6, 5, "#ffe27a", 1, 6); });
 }
 const iconURL = {};
@@ -963,6 +1018,7 @@ function buildVillage() {
   addEnt(sc, { id: "mayor", type: "npc", name: "村長", tx: 17, ty: 10, solid: true, dir: "down", look: { hair: "#e8e8e8", shirt: "#3f8a5a", pants: "#5a4a3a" } });
   addEnt(sc, { id: "craft", type: "npc", name: "工匠阿木", tx: 31, ty: 10, solid: true, dir: "down", look: { hair: "#5a3a20", shirt: "#d9822b", pants: "#3a3a4a" } });
   addEnt(sc, { id: "granny", type: "npc", name: "雜貨婆婆", tx: 23, ty: 15, solid: true, dir: "down", look: { hair: "#b8b0c8", shirt: "#9a5fb0", pants: "#6a4a7a", style: "girl", ribbon: "#6a4a7a" } });
+  addEnt(sc, { id: "tailor", type: "npc", name: "裁縫師小線", tx: 27, ty: 15, solid: true, dir: "down", look: { hair: "#3a2a4a", shirt: "#c84a6a", pants: "#4a3a5a", style: "girl", ribbon: "#f2c230" } });
   addEnt(sc, { id: "fountain", type: "fountain", tx: 19, ty: 15, w: 2, h: 2, solid: true });
   setTile(sc, 19, 15, TILE.GRASS); setTile(sc, 20, 15, TILE.GRASS); setTile(sc, 19, 16, TILE.GRASS); setTile(sc, 20, 16, TILE.GRASS);
   addEnt(sc, { id: "board", type: "board", tx: 13, ty: 14, solid: true });
@@ -1096,7 +1152,7 @@ function newSave(seat, look) {
     daily: null, main: { step: 0, foxStarted: false, found: [false, false, false] }, flags: { repaired: false, bridge: false },
     talkedToday: [], npcQuizDay: {}, counters: { day: 0, sales: 0 },
     stats: {}, log: [], settings: { music: 0.4, sfx: 0.7, speak: false }, recentQ: [], fishDay: { day: -1, n: 0 },
-    vehicles: [], ride: null, weapons: [], weapon: null, nextRaid: null,
+    vehicles: [], ride: null, weapons: [], weapon: null, nextRaid: null, wear: null,
   };
 }
 /* ---------------- 雲端存檔（Google 表單寫入、回應試算表讀取） ----------------
@@ -1452,6 +1508,7 @@ function ensureDaily() {
   if (S.flags.bridge) avail.push("mushroom", "honey", "soup", "potion");
   if (S.flags.beach) avail.push("shell", "coconut");
   if (S.flags.mine) avail.push("coal", "iron", "lamp");
+  if (S.main.step >= 28) avail.push("cotton", "shirt", "shorts");
   const item = avail[Math.floor(r() * avail.length)];
   const n = ITEMS[item].crafted ? 1 + Math.floor(r() * 2) : 2 + Math.floor(r() * 3);
   S.order = { day: d, item, n, done: false };
@@ -1487,6 +1544,7 @@ const NPC_IDLE = {
   fox: ["嗚嗚～（小狐狸搖搖尾巴）", "森林深處有好多蜂蜜喔！"],
   wheel: ["騎車跑得快，送貨更方便！", "Bike 就是腳踏車，Horse 是馬喔！", "存夠錢就來買一台吧！"],
   fisherman: ["海風好舒服啊～", "Shell 就是貝殼，Coconut 是椰子。", "聽到警報要趕快回村子喔！"],
+  tailor: ["Shirt 是襯衫，Shorts 是短褲，Dress 是洋裝！", "Jacket 是夾克，Coat 是大衣。冬天要穿暖一點喔！", "「穿」的英文是 wear：I wear a coat."],
   miner: ["Iron 是鐵，Coal 是煤炭，Gem 是寶石！", "礦坑裡要小心腳下喔。", "寶石做成皇冠（crown），可以賣好多錢！"],
 };
 function interact(e) {
@@ -1570,6 +1628,11 @@ function talkNpc(e) {
         { label: "等一下", alt: true }]);
       return talk("村長", "聽說你在礦坑挖到寶石了？真厲害！");
     }
+    if (st === 25) return talk("村長", ["呼……天氣越來越冷了。", "下個星期村子要舉辦冬日祭典（Winter Festival），可是大家都沒有暖和的衣服。", "雜貨婆婆旁邊新開了一間裁縫店，裁縫師小線的手很巧。", "去找她學做衣服吧！"], null, () => advanceMain(26));
+    if (st === 33) {
+      if (worn() === "coat" || worn() === "jacket") return talk("村長", [`Wow! You wear a warm ${worn()}! 你穿得好暖和！`, "冬日祭典開始囉！你看，小狐狸穿著短褲、婆婆穿著洋裝、阿海穿著夾克，老石也穿著大衣來了！", "大家都穿著你做的衣服，真是最棒的祭典！", "這是全村送你的謝禮：400 金！"], null, () => { giveReward({ coins: 400 }); Sound.sfx("up"); advanceMain(34); toast("第三章完成！冬日祭典大成功！", "gold"); });
+      return talk("村長", "祭典要穿暖和一點喔！給自己做一件夾克（jacket）或大衣（coat），\n打開背包按「穿上 wear」，再來找我。");
+    }
     if (st === 15) return talk("村長", ["你把動物都趕走了，村子安全了！真是太感謝你了！", "這是全村送你的謝禮：100 金！", "對了，漁夫阿海一直很照顧大家。做一條貝殼項鍊送他吧！工作台就能做。"], null, () => { giveReward({ coins: 100 }); advanceMain(16); });
     if (npcQuiz(e, "村長")) return;
     return talk("村長", pick(NPC_IDLE.mayor));
@@ -1595,7 +1658,19 @@ function talkNpc(e) {
     if (st === 6 && S.up.shelfSlots >= UPGRADES.shelfSlots.values.length) return talk("工匠阿木", "你的貨架已經是最高級了！這個任務算你完成。", null, () => advanceMain(7));
     return talk("工匠阿木", pick(NPC_IDLE.craft), [{ label: "我要升級", fn: openUpgrades }, { label: "買武器", fn: openWeapons }, { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "工匠阿木")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
   }
+  if (e.id === "tailor") {
+    if (st < 26) return talk("裁縫師小線", "你好！我是剛搬來的裁縫師小線。\n等天氣變冷，大家就會需要新衣服了！");
+    if (st === 26) return talk("裁縫師小線", ["你好！我是裁縫師小線。冬日祭典快到了，大家都需要暖和的衣服！", "衣服的英文有很多：shirt 襯衫、shorts 短褲、dress 洋裝、jacket 夾克、coat 大衣。", "「穿」衣服的英文是 wear。I wear a coat. 就是「我穿大衣」。", "送你 4 包棉花種子（cotton）。種在農田裡，收成之後在工作台做成布（cloth），就能做衣服了！"], null, () => { S.seeds.cotton = (S.seeds.cotton || 0) + 4; advanceMain(27); writeSave(); });
+    if (st === 28) {
+      if (worn() === "shirt") return talk("裁縫師小線", ["哇！You wear a nice shirt! 你穿襯衫好好看！", "這是謝禮：80 金。", "接下來幫村民們做衣服吧！先做一件短褲（shorts），送給森林裡的小狐狸。"], null, () => { giveReward({ coins: 80 }); Sound.sfx("up"); advanceMain(29); });
+      if ((S.inv.shirt || 0) >= 1) return talk("裁縫師小線", "襯衫做好了！打開背包，按襯衫的「穿上 wear」，穿給我看看！");
+      return talk("裁縫師小線", "布＝2 個棉花，襯衫＝2 塊布。\n在工作台拼出 s-h-i-r-t，做好後穿上（wear）給我看！");
+    }
+    if (npcQuiz(e, "裁縫師小線")) return;
+    return talk("裁縫師小線", pick(NPC_IDLE.tailor));
+  }
   if (e.id === "granny") {
+    if (st === 30 && (S.inv.dress || 0) >= 1) return giftClothes("雜貨婆婆", "dress", ["哎呀，好漂亮的洋裝！", "I can wear this dress at the festival! 祭典上我要穿這件！"], 120);
     return talk("雜貨婆婆", S.order && !S.order.done ? "我今天有一張英文訂單，你看得懂嗎？" : pick(NPC_IDLE.granny), [
       { label: "看英文訂單", fn: showOrder }, { label: `逛逛${SEED_SHOP}`, fn: openSeedShop }, { label: "每日任務", fn: openQuests },
       { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "雜貨婆婆")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
@@ -1609,6 +1684,8 @@ function talkNpc(e) {
         { label: "等一下", alt: true }]);
       return talk("漁夫阿海", "嗯？你在做什麼東西嗎？（貝殼項鍊：3 個貝殼＋1 朵野花，在商店的工作台做）");
     }
+    if (st === 31) return (S.inv.jacket || 0) >= 1 ? giftClothes("漁夫阿海", "jacket", ["海風好冷，我正需要一件夾克！", "I wear a jacket. Now I'm warm! 現在好暖和！"], 150)
+      : talk("漁夫阿海", "哈啾！海邊的風好冷啊……（夾克＝3 塊布＋1 個鐵礦，在工作台做）");
     if (npcQuiz(e, "漁夫阿海")) return;
     return talk("漁夫阿海", pick(NPC_IDLE.fisherman));
   }
@@ -1620,6 +1697,8 @@ function talkNpc(e) {
         { label: "等一下", alt: true }]);
       return talk("礦工老石", "礦燈＝2 個鐵礦＋1 個煤炭，在商店的工作台做。拜託你了！");
     }
+    if (st === 32) return (S.inv.coat || 0) >= 1 ? giftClothes("礦工老石", "coat", ["礦坑裡好冷，有大衣真是太好了！", "I wear a coat. Thank you! 謝謝你！"], 180)
+      : talk("礦工老石", "礦坑深處好冷啊……（大衣＝4 塊布＋2 個貝殼，在工作台做）");
     if (npcQuiz(e, "礦工老石")) return;
     return talk("礦工老石", pick(NPC_IDLE.miner));
   }
@@ -1627,10 +1706,20 @@ function talkNpc(e) {
     if (st === 7 && !S.main.foxStarted) return talk("小狐狸", ["嗚嗚……我把 3 個寶物弄丟在森林裡了。", "地上會閃閃發光的就是！可以幫我找回來嗎？"], null, () => { S.main.foxStarted = true; markDirty(); toast("在森林裡找 3 個閃閃發光的寶物", "gold"); });
     if (st === 7 && S.main.found.every(Boolean)) return talk("小狐狸", ["全部找到了！謝謝你！", "這些給你：40 金和 3 個草藥。", "聽說工匠可以修好河上的橋，對岸有好多蜂蜜喔！"], null, () => { giveReward({ coins: 40, items: { herb: 3 } }); advanceMain(8); });
     if (st === 7) return talk("小狐狸", `還差 ${S.main.found.filter((f) => !f).length} 個寶物，拜託你了！`);
+    if (st === 29) return (S.inv.shorts || 0) >= 1 ? giftClothes("小狐狸", "shorts", ["哇！是短褲！", "I wear shorts and run fast! 穿短褲跑得好快！"], 100)
+      : talk("小狐狸", "嗚～（小狐狸好像很想要一件短褲。短褲＝2 塊布，在工作台做）");
     if (npcQuiz(e, "小狐狸")) return;
     return talk("小狐狸", pick(NPC_IDLE.fox));
   }
 }
+// 第三章：把做好的衣服送給村民，完成這一步主線
+function giftClothes(name, item, thanks, coins) {
+  talk(name, `這是要送我的${ITEMS[item].zh}（${ITEMS[item].en}）嗎？`, [
+    { label: `送給${name}`, fn: () => { addItem(item, -1); talk(name, [...thanks, `這是謝禮：${coins} 金。`], null, () => { giveReward({ coins }); Sound.sfx("up"); advanceMain(S.main.step + 1); }); } },
+    { label: "等一下", alt: true }]);
+}
+const worn = () => (S.wear && S.inv[S.wear] > 0 ? S.wear : null);   // 穿的衣服賣掉或送掉就不算穿著
+const wornLook = () => (worn() ? { ...S.look, ...WEAR[worn()].look } : S.look);
 const orderSentence = (o) => `Please bring me ${NUM_EN[o.n] || o.n} ${PHRASE[o.item][o.n === 1 ? 0 : 1]}.`;
 const orderReward = (o) => Math.ceil(ITEMS[o.item].price * o.n * 1.5) + 5;
 function showOrder(hint = false) {
@@ -1685,7 +1774,7 @@ function startPractice() {
 }
 function openBench() {
   if (S.main.step < 6) return talk("工作台", "工作台壞掉了……修好商店之後，就能把材料做成更值錢的商品。");
-  const list = RECIPES.map((r, i) => ({ r, i })).filter(({ r }) => !r.needMine || S.flags.mine);
+  const list = RECIPES.map((r, i) => ({ r, i })).filter(({ r }) => (!r.needMine || S.flags.mine) && (!r.needStep || S.main.step >= r.needStep));
   const rows = list.map(({ r, i }) => {
     const it = ITEMS[r.out];
     return `<div class="row"><img src="${icon(r.out)}" alt=""><div class="grow"><div class="t">${it.zh} <span class="muted">${it.en}</span>${r.spell ? ` <span class="spell-badge">拼字</span>` : ""}</div>
@@ -1858,6 +1947,8 @@ function harvestPlot(i) {
     Sound.sfx("gather");
     if (e) { popAt(e.tx * T + 8, e.ty * T, kind, `+${n}`); burst(e.tx * T + 8, e.ty * T + 8, "#7ac86a"); }
     toast(`收成 ${ITEMS[kind].zh} ×${n}${res === "correct" ? "（答對多 1 個）" : ""}`, "good");
+    // 用「收成過幾個」計算，先把棉花做成布也不會卡關
+    if (S.main.step === 27 && kind === "cotton") { S.main.cotton = (S.main.cotton || 0) + n; if (S.main.cotton >= 4) advanceMain(28); }
     questEvent("harvest", kind, n); writeSave();
   };
   if (rand() < GATHER_QUESTION_CHANCE) askQuestion("harvest", {}, finish); else finish("none");
@@ -1865,9 +1956,9 @@ function harvestPlot(i) {
 function openSeedShop() {
   const list = Object.entries(CROPS);
   const rows = list.map(([k, c]) => {
-    const locked = c.needBridge && !S.flags.bridge;
+    const locked = (c.needBridge && !S.flags.bridge) || (c.needStep && S.main.step < c.needStep);
     return `<div class="row"><img src="${icon(k)}" alt=""><div class="grow"><div class="t">${ITEMS[k].zh}種子 <span class="muted">${ITEMS[k].en}</span></div>
-      <div class="d">${locked ? "修好森林的橋以後才買得到" : `一包 ${c.seed} 金・約 ${realMinutes(c.grow)} 分鐘長大・一個賣 ${ITEMS[k].price} 金・你有 ${S.seeds[k] || 0} 包`}</div></div>
+      <div class="d">${locked ? (c.needBridge ? "修好森林的橋以後才買得到" : "第三章認識裁縫師以後才買得到") : `一包 ${c.seed} 金・約 ${realMinutes(c.grow)} 分鐘長大・一個賣 ${ITEMS[k].price} 金・你有 ${S.seeds[k] || 0} 包`}</div></div>
       ${locked ? "" : `<button class="btn small" data-act="b1_${k}" ${S.coins >= c.seed ? "" : "disabled"}>買 1</button><button class="btn small" data-act="b5_${k}" ${S.coins >= c.seed * 5 ? "" : "disabled"}>買 5</button>`}</div>`;
   }).join("");
   const h = { __closable: true };
@@ -2142,9 +2233,18 @@ function openBag() {
   const keys = Object.keys(ITEMS).filter((k) => S.inv[k] > 0);
   openModal(`${closeBtn}<h2>背包（${invCount()} / ${capacity()}）</h2>
     <div class="row"><img src="${icon("coin")}" alt=""><div class="grow"><div class="t">${S.coins} 金</div></div></div><h3>物品</h3>
-    ${keys.length ? `<div class="grid-items">${keys.map((k) => `<div class="item-cell"><img src="${icon(k)}" alt=""><div>${ITEMS[k].zh} ×${S.inv[k]}<br><small class="muted">${ITEMS[k].en}・原價 ${ITEMS[k].price}</small></div></div>`).join("")}</div>` : `<p class="empty">背包是空的</p>`}
+    ${keys.length ? `<div class="grid-items">${keys.map((k) => `<div class="item-cell"><img src="${icon(k)}" alt=""><div>${ITEMS[k].zh} ×${S.inv[k]}<br><small class="muted">${ITEMS[k].en}・原價 ${ITEMS[k].price}</small>${WEAR[k] ? `<br><button class="btn small${worn() === k ? " alt" : ""}" data-act="wear_${k}">${worn() === k ? "脫下" : "穿上 wear"}</button>` : ""}</div></div>`).join("")}</div>` : `<p class="empty">背包是空的</p>`}
     <h3>裝備</h3><div class="list"><div class="row">${S.weapon ? `<img src="${icon("w_" + S.weapon)}" alt="">` : ""}${S.ride ? `<img src="${icon("v_" + S.ride)}" alt="">` : ""}<div class="grow"><div class="t">武器：${S.weapon ? WEAPONS[S.weapon].name : "沒有"}</div><div class="d">交通工具：${S.ride ? VEHICLES[S.ride].name : S.vehicles.length ? "沒在騎" : "沒有"}</div></div>${S.vehicles.length ? `<button class="btn small" data-act="veh">換車</button>` : ""}</div></div>
-    <h3>升級狀態</h3><div class="list">${Object.entries(UPGRADES).map(([id, u]) => `<div class="row"><img src="${icon("up_" + id)}" alt=""><div class="grow"><div class="t">${u.name} Lv${S.up[id]}</div><div class="d">${u.unit(upVal(id))}</div></div></div>`).join("")}</div>`, { __closable: true, veh: openVehicles });
+    <h3>升級狀態</h3><div class="list">${Object.entries(UPGRADES).map(([id, u]) => `<div class="row"><img src="${icon("up_" + id)}" alt=""><div class="grow"><div class="t">${u.name} Lv${S.up[id]}</div><div class="d">${u.unit(upVal(id))}</div></div></div>`).join("")}</div>`, { __closable: true, veh: openVehicles, ...wearHandlers() });
+}
+function wearHandlers() {
+  const h = {};
+  for (const k of Object.keys(WEAR)) h["wear_" + k] = () => {
+    if (worn() === k) { S.wear = null; toast(`脫下${ITEMS[k].zh}了`); }
+    else { S.wear = k; Sound.sfx("up"); toast(`${WEAR[k].say} 你穿上了${ITEMS[k].zh}！`, "gold"); speak(WEAR[k].say, true); }
+    writeSave(); openBag();
+  };
+  return h;
 }
 function openQuests() {
   ensureDaily();
@@ -2594,6 +2694,7 @@ function objectiveText() {
   if (st === 18) return `${MAIN[18]}（金 ${Math.min(300, S.coins)}/300・木材 ${Math.min(20, S.inv.wood || 0)}/20）`;
   if (st === 19) return `${MAIN[19]}（${Math.min(3, S.inv.iron || 0)}/3）`;
   if (st === 20) return `${MAIN[20]}（鐵礦 ${Math.min(5, S.inv.iron || 0)}/5・木材 ${Math.min(10, S.inv.wood || 0)}/10）`;
+  if (st === 27) return `${MAIN[27]}（${Math.min(4, S.main.cotton || 0)}/4）`;
   return MAIN[Math.min(st, MAIN.length - 1)];
 }
 function objectiveHint() {
@@ -2609,6 +2710,10 @@ function objectiveHint() {
   if (st === 20 && has({ iron: 5, wood: 10 })) return "材料夠了！到礦坑裡的礦車旁按「礦車」";
   if (st === 22 && (S.inv.lamp || 0) >= 1) return "礦燈做好了！到礦坑深處拿給礦工老石";
   if (st === 24 && (S.inv.ring || 0) >= 1) return "戒指做好了！回村子拿給村長";
+  if (st === 28 && worn() === "shirt") return "穿好襯衫了！去找裁縫師小線，按「對話」";
+  if (st === 28 && (S.inv.shirt || 0) >= 1) return "襯衫做好了！打開背包，按襯衫的「穿上 wear」";
+  if (GIFTS[st] && (S.inv[GIFTS[st][0]] || 0) >= 1) return `${ITEMS[GIFTS[st][0]].zh}做好了！跟著箭頭拿去送`;
+  if (st === 33 && (worn() === "coat" || worn() === "jacket")) return "穿好了！去找村長參加冬日祭典";
   return MAIN_HINT[st];
 }
 function objectiveTarget() {
@@ -2627,6 +2732,15 @@ function objectiveTarget() {
     live.sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y));
     return { sc: "village", e: { tx: live[0].x / T - 0.5, ty: live[0].y / T - 1.2, w: 1, h: 1 } };
   }
+  // 第三章做衣服：有衣服 → 找村民；材料夠 → 工作台；布不夠 → 工作台（有棉花）或農田
+  const clothTarget = (item, sc, id) => {
+    if ((S.inv[item] || 0) >= 1) return find(sc, id);
+    const need = RECIPES.find((r) => r.out === item).need;
+    if (has(need)) return find("shop", "bench");
+    if ((S.inv.cloth || 0) < need.cloth) return (S.inv.cotton || 0) >= 2 ? find("shop", "bench") : find("village", "plot0");
+    return null;
+  };
+  if (GIFTS[st]) return clothTarget(...GIFTS[st]);
   switch (st) {
     case 0: case 4: return find("village", "mayor");
     case 1: return nearestNode("tree");
@@ -2652,6 +2766,11 @@ function objectiveTarget() {
     case 21: return find("mine", "miner");
     case 22: return (S.inv.lamp || 0) >= 1 ? find("mine", "miner") : has({ iron: 2, coal: 1 }) ? find("shop", "bench") : (S.inv.iron || 0) < 2 ? nearestNode("iron", "mine") : nearestNode("coal", "mine");
     case 23: return nearestNode("gem", "mine");
+    case 25: return find("village", "mayor");
+    case 26: return find("village", "tailor");
+    case 27: return find("village", "plot0");
+    case 28: return worn() === "shirt" ? find("village", "tailor") : (S.inv.shirt || 0) >= 1 ? null : clothTarget("shirt", "village", "tailor");
+    case 33: return worn() === "coat" || worn() === "jacket" ? find("village", "mayor") : (S.inv.coat || S.inv.jacket) ? null : clothTarget("jacket", "village", "mayor");
     case 24: return (S.inv.ring || 0) >= 1 ? find("village", "mayor") : has({ gem: 1, iron: 1 }) ? find("shop", "bench") : (S.inv.gem || 0) < 1 ? nearestNode("gem", "mine") : nearestNode("iron", "mine");
     case 16: return (S.inv.necklace || 0) >= 1 ? find("beach", "fisherman") : has({ shell: 3, flower: 1 }) ? find("shop", "bench") : (S.inv.shell || 0) < 3 ? nearestNode("shell", "beach") : nearestNode("flower", "village");
     default: return null;
@@ -2906,6 +3025,7 @@ function drawCrop(kind, stage, x, y) {
   if (stage < 3) return;
   if (kind === "carrot") { P(g, x + 6, y + 11, "#e8822a", 4, 3); P(g, x + 7, y + 14, "#e8822a", 2, 1); }
   if (kind === "tomato") for (const [a, b] of [[4, 6], [10, 7], [7, 10]]) { circle(g, x + a, y + b, 2, "#d8342c"); P(g, x + a - 1, y + b - 1, "#ff8a7a"); }
+  if (kind === "cotton") for (const [a, b] of [[4, 5], [11, 6], [8, 9]]) { circle(g, x + a, y + b, 2, "#f8f8f0"); P(g, x + a - 1, y + b - 1, "#ffffff"); }
   if (kind === "strawberry") for (const [a, b] of [[4, 9], [11, 9], [8, 12]]) { P(g, x + a - 1, y + b - 1, "#e0284a", 3, 3); P(g, x + a, y + b + 2, "#e0284a"); P(g, x + a, y + b, "#ffe080"); }
 }
 function drawShelf(e, x, y) {
@@ -3061,8 +3181,8 @@ function render() {
   for (const it of list) {
     if (it.p) {
       const ride = S.ride && scene.outdoor ? S.ride : null;
-      if (ride) { drawVehicle(ride, player.x - cx, player.y - cy, player.dir, player.moving, player.anim); drawChar(S.look, player.x, player.y - RIDE_LIFT[ride], player.dir, false, 0, cx, cy); }
-      else drawChar(S.look, player.x, player.y, player.dir, player.moving, player.anim, cx, cy);
+      if (ride) { drawVehicle(ride, player.x - cx, player.y - cy, player.dir, player.moving, player.anim); drawChar(wornLook(), player.x, player.y - RIDE_LIFT[ride], player.dir, false, 0, cx, cy); }
+      else drawChar(wornLook(), player.x, player.y, player.dir, player.moving, player.anim, cx, cy);
       if (action && action.tree) drawTool(cx, cy);
       if (swing > 0) drawSwing(cx, cy);
     }
