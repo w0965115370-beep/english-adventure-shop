@@ -3371,6 +3371,13 @@ function startGame(save) {
   for (const k of Object.keys(base)) if (S[k] === undefined) S[k] = base[k];
   for (const k of Object.keys(UPGRADES)) if (!S.up[k]) S.up[k] = 1;
   while (S.farm.length < FARM_PLOTS) S.farm.push({ c: null, g: 0, wet: false, dry: false });
+  // 老師送每人一台腳踏車（只送一次；已有更快的小馬就不換下來）
+  let gotBike = false;
+  if (!S.flags.freeBike) {
+    S.flags.freeBike = true; gotBike = true;
+    if (!S.vehicles.includes("bike")) S.vehicles.push("bike");
+    if (!S.ride || VEHICLES[S.ride].speed < VEHICLES.bike.speed) S.ride = "bike";
+  }
   scenes.village = buildVillage(); scenes.forest = buildForest(); scenes.shop = buildShop(); scenes.beach = buildBeach(); scenes.mine = buildMine(); applyFlags();
   raid = null; speeches.length = 0; $("bubbles").innerHTML = "";
   ensureDaily();
@@ -3379,6 +3386,7 @@ function startGame(save) {
   $("title").hidden = true; showGameUI(true); resize();
   Sound.init(); Sound.apply(); Sound.startMusic();
   writeSave();
+  if (gotBike) setTimeout(() => toast("老師送你一台腳踏車（bike）！在戶外會自動騎，跑得更快", "gold"), 1200);
   if (S.main.step === 0) {
     const go = () => setTimeout(() => toast("走到村長身邊（黃色箭頭），按右下角的按鈕說話", "gold"), 300);
     if (!S.flags.helpSeen) { S.flags.helpSeen = true; writeSave(); setTimeout(() => openHelp(0, go), 400); } else go();
