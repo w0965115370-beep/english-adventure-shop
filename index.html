@@ -39,7 +39,9 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .help-step{display:flex;gap:10px;align-items:flex-start;margin:8px 0;font-size:17px;line-height:1.45}
 .help-step b.n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--gold);color:#2b1d14;display:flex;align-items:center;justify-content:center}
 .help-dots{text-align:center;color:var(--muted);margin-top:6px}
-#menu-btns{position:fixed;top:calc(8px + var(--sat));right:calc(8px + var(--sar));display:flex;gap:6px;z-index:5}
+#menu-toggle{position:fixed;top:calc(8px + var(--sat));right:calc(8px + var(--sar));z-index:6;height:48px;padding:0 14px;font-size:17px;font-weight:bold}
+#menu-toggle:active{transform:translateY(2px)}
+#menu-btns{position:fixed;top:calc(62px + var(--sat));right:calc(8px + var(--sar));display:flex;gap:6px;z-index:5}
 #menu-btns button{min-width:64px;height:48px;padding:0 10px;font-size:16px;font-weight:bold;background:var(--panel);border:3px solid var(--border);border-radius:6px;box-shadow:0 3px 0 #0006}
 #menu-btns button:active{transform:translateY(2px);box-shadow:0 1px 0 #0006}
 
@@ -178,7 +180,7 @@ html,body{background:#183028}
 body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;letter-spacing:.5px}
 
 /* 共用：GBA 雙框視窗 */
-.gba-win,#modal-box,#objective,#hud,#menu-btns,#title .card,.toast{
+.gba-win,#modal-box,#objective,#hud,#menu-btns,#menu-toggle,#title .card,.toast{
   background:var(--win);color:var(--ink);border:3px solid var(--win-line);border-radius:8px;
   box-shadow:inset 0 0 0 3px var(--win),inset 0 0 0 5px var(--win-in),0 4px 0 #0006;
   text-shadow:1px 1px 0 var(--txt-sh)}
@@ -209,9 +211,9 @@ body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,san
 #btn-skill{position:fixed;right:calc(40px + var(--sar));bottom:calc(150px + var(--sab));width:80px;height:80px;border-radius:50%;z-index:5;font-size:18px;font-weight:bold;
   background:#7a4ac8;border:4px solid #3a1a70;color:#fff;text-shadow:2px 2px 0 #3a1a70;box-shadow:inset -4px -5px 0 #5a2aa0,0 5px 0 #0007}
 #btn-skill:active{transform:translateY(3px)}
-#minimap{position:fixed;top:calc(8px + var(--sat));right:calc(14px + var(--sar) + var(--menu-w,130px));width:160px;z-index:5;cursor:pointer;image-rendering:pixelated;border:3px solid var(--win-line);border-radius:6px;box-shadow:0 4px 0 #0006;background:#183028}
-@media (max-width:700px){#minimap{width:110px}}
-#map-cv{width:100%;image-rendering:pixelated;border:3px solid #2b1d14;border-radius:4px;display:block;margin-top:8px}
+#minimap{position:fixed;top:calc(8px + var(--sat));right:calc(14px + var(--sar) + var(--menu-w,130px));width:200px;z-index:5;cursor:pointer;border:3px solid var(--win-line);border-radius:6px;box-shadow:0 4px 0 #0006;background:#183028}
+@media (max-width:700px){#minimap{width:140px}}
+#map-cv{width:100%;border:3px solid #2b1d14;border-radius:4px;display:block;margin-top:8px}
 .map-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 #btn-a.dim{background:#888c90;border-color:#484c50;text-shadow:2px 2px 0 #484c50;box-shadow:inset -4px -5px 0 #686c70,0 5px 0 #0007}
 
@@ -320,6 +322,7 @@ table.words{background:#fff}
 </div>
 <div id="objective" hidden></div>
 <canvas id="minimap" hidden title="打開地圖"></canvas>
+<button id="menu-toggle" hidden aria-expanded="false">☰ 選單</button>
 <div id="menu-btns" hidden>
   <button data-open="map">地圖</button>
   <button data-open="bag">背包</button>
@@ -2478,8 +2481,10 @@ joyZone.addEventListener("pointerup", joyEnd); joyZone.addEventListener("pointer
 $("btn-skill").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); if (!modalOpen() && S) openSkills(); });
 $("minimap").addEventListener("click", () => { Sound.init(); Sound.sfx("click"); if (!modalOpen() && S) openMap(); });
 $("btn-a").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); Sound.startMusic(); if (!modalOpen()) interact(currentTarget); });
+const showMenu = (on) => { $("menu-btns").hidden = !on; $("menu-toggle").setAttribute("aria-expanded", String(on)); };
+$("menu-toggle").addEventListener("click", () => { Sound.init(); Sound.sfx("click"); showMenu($("menu-btns").hidden); });
 document.querySelectorAll("#menu-btns button").forEach((b) => b.addEventListener("click", () => {
-  Sound.init(); Sound.sfx("click");
+  Sound.init(); Sound.sfx("click"); showMenu(false);
   ({ map: () => openMap(), bag: openBag, quests: openQuests, words: openWords, settings: openSettings, help: () => openHelp(),
      logout: () => talk("登出", "要存檔並登出嗎？\n下次點自己的名字，就能從現在的進度繼續玩。", [{ label: "存檔並登出", fn: logout }, { label: "繼續玩", alt: true }]) })[b.dataset.open]();
 }));
@@ -2619,27 +2624,30 @@ function updateMobs(dt) {
 
 /* ---------------- 地圖：看整個區域、自己在哪裡、目標在哪裡 ---------------- */
 const AREA_NAME = { village: "村子", forest: "森林", beach: "海邊", mine: "礦坑" };
-const BLD_NAME = { b_shop: "商店", b_mayor: "村長家", b_work: "工匠", b_hut: "小屋" };
+const BLD_NAME = { b_shop: ["商店", "擺貨賣東西"], b_mayor: ["村長家", "主線任務"], b_work: ["工匠", "升級・買武器"], b_hut: ["漁夫小屋", ""] };
+const NPC_ROLE = { mayor: "主線任務", craft: "升級・武器", granny: "種子・訂單", tailor: "做衣服", fisher: "釣魚", wheel: "交通工具", mage: "學魔法" };
 const mapHere = () => scene.name === "shop" ? "village" : scene.name;   // 在商店裡就看村子
 // full=false 是右上角的小地圖：只畫地形、建築、目標星星和你
 function drawMap(cv, name, s, full) {
   const here = mapHere(), sc = scenes[name];
   const open = ["village", "forest", ...(S.flags.beach ? ["beach"] : []), ...(S.flags.mine ? ["mine"] : [])];
-  cv.width = sc.w * s; cv.height = sc.h * s;
-  const c = cv.getContext("2d"); c.imageSmoothingEnabled = false;
+  const W = sc.w * s, H = sc.h * s, k = 3;   // 畫成 3 倍解析度，字在平板上才清楚
+  cv.width = W * k; cv.height = H * k;
+  const c = cv.getContext("2d"); c.scale(k, k); c.imageSmoothingEnabled = false;
   for (let y = 0; y < sc.h; y++) for (let x = 0; x < sc.w; x++) { const v = tileImgs[sc.tiles[y * sc.w + x]]; c.drawImage(v[0] || v, x * s, y * s, s, s); }
-  const placed = [], hit = (x, y, w) => placed.some((r) => x < r.x + r.w && r.x < x + w && y < r.y + 17 && r.y < y + 17);
+  const fs = full ? 13 : 10, lh = fs + 4;   // 小地圖字小一點
+  const placed = [], hit = (x, y, w) => placed.some((r) => x < r.x + r.w && r.x < x + w && y < r.y + lh && r.y < y + lh);
   const label = (text, x, y, bg, fg = "#fff") => {
-    c.font = "bold 13px sans-serif"; const w = c.measureText(text).width + 8;
-    x = clamp(x - w / 2, 0, cv.width - w); y = clamp(y, 0, cv.height - 17);
-    if (hit(x, y, w)) y = clamp(y + 30, 0, cv.height - 17);   // 名字擠在一起就改放到下面
+    c.font = `bold ${fs}px sans-serif`; const w = c.measureText(text).width + 6;
+    x = clamp(x - w / 2, 0, W - w); y = clamp(y, 0, H - lh);
+    if (hit(x, y, w)) y = clamp(y + 30, 0, H - lh);   // 名字擠在一起就改放到下面
     placed.push({ x, y, w });
-    c.fillStyle = bg; c.fillRect(x, y, w, 17); c.fillStyle = fg; c.textBaseline = "top"; c.fillText(text, x + 4, y + 2);
+    c.fillStyle = bg; c.fillRect(x, y, w, lh); c.fillStyle = fg; c.textBaseline = "top"; c.fillText(text, x + 3, y + 2);
   };
   for (const e of sc.ents) {
-    if (e.type === "building") { c.fillStyle = e.roof; c.fillRect(e.tx * s, e.ty * s, e.w * s, e.h * s); if (full && BLD_NAME[e.id]) label(BLD_NAME[e.id], (e.tx + e.w / 2) * s, (e.ty + e.h / 2) * s - 8, "#2b1d14"); }
+    if (e.type === "building") { c.fillStyle = e.roof; c.fillRect(e.tx * s, e.ty * s, e.w * s, e.h * s); const b = BLD_NAME[e.id]; if (b) label(full && b[1] ? `${b[0]}：${b[1]}` : b[0], (e.tx + e.w / 2) * s, (e.ty + e.h / 2) * s - lh / 2, "#2b1d14"); }
   }
-  if (full) for (const e of sc.ents) if (e.type === "npc" && !e.walker && entVisible(e)) { c.fillStyle = "#2b1d14"; c.fillRect(e.tx * s + 3, e.ty * s + 3, 6, 6); label(e.name, (e.tx + 0.5) * s, e.ty * s - 17, "#3a6ab0"); }
+  if (full) for (const e of sc.ents) if (e.type === "npc" && !e.walker && entVisible(e)) { c.fillStyle = "#2b1d14"; c.fillRect(e.tx * s + 3, e.ty * s + 3, 6, 6); label(NPC_ROLE[e.id] ? `${e.name}：${NPC_ROLE[e.id]}` : e.name, (e.tx + 0.5) * s, e.ty * s - 17, "#3a6ab0"); }
   if (full) for (const w of sc.warps) if (open.includes(w.to)) label("往" + AREA_NAME[w.to], (w.x + w.w / 2) * s, w.y * s, "#2a7a3a");
   // 目標：在這張地圖上就畫星星，在別的區域就標出口
   const t = objectiveTarget();
@@ -3504,8 +3512,8 @@ cv.addEventListener("pointerdown", (ev) => {
 });
 
 function updateHud() {
-  drawMap($("minimap"), mapHere(), 4, false);
-  const mw = $("menu-btns").offsetWidth; if (mw && mw !== updateHud.mw) { updateHud.mw = mw; document.documentElement.style.setProperty("--menu-w", mw + "px"); }
+  drawMap($("minimap"), mapHere(), 5, false);
+  const mw = $("menu-toggle").offsetWidth; if (mw && mw !== updateHud.mw) { updateHud.mw = mw; document.documentElement.style.setProperty("--menu-w", mw + "px"); }
   const hh = $("hud").offsetHeight; if (hh && hh !== updateHud.hh) { updateHud.hh = hh; document.documentElement.style.setProperty("--hud-h", hh + 8 + "px"); }
   if (!S) return;
   $("hud-coins").textContent = S.coins;
@@ -3525,12 +3533,14 @@ function loop(now) {
 }
 
 /* ---------------- 開始／登出 ---------------- */
-function showGameUI(on) { for (const id of ["hud", "objective", "minimap", "menu-btns", "joy-zone", "btn-a"]) $(id).hidden = !on; if (!on) { raid = null; mobs = []; $("btn-skill").hidden = true; $("alarm").hidden = true; for (const sp of speeches) sp.el.remove(); speeches.length = 0; } }
+function showGameUI(on) { $("menu-btns").hidden = true; $("menu-toggle").setAttribute("aria-expanded", "false");
+  for (const id of ["hud", "objective", "minimap", "menu-toggle", "joy-zone", "btn-a"]) $(id).hidden = !on; if (!on) { raid = null; mobs = []; $("btn-skill").hidden = true; $("alarm").hidden = true; for (const sp of speeches) sp.el.remove(); speeches.length = 0; } }
 function startGame(save) {
   S = save;
   // 舊存檔補欄位
   const base = newSave(S.seat, S.look);
   for (const k of Object.keys(base)) if (S[k] === undefined) S[k] = base[k];
+  S.look = { ...S.look, hair: (S.look && S.look.hair) || HAIRS[0], shirt: (S.look && S.look.shirt) || SHIRTS[1] };   // 缺頭髮或衣服顏色時角色會變透明
   for (const k of Object.keys(UPGRADES)) if (!S.up[k]) S.up[k] = 1;
   while (S.farm.length < FARM_PLOTS) S.farm.push({ c: null, g: 0, wet: false, dry: false });
   // 老師送每人一台腳踏車（只送一次；已有更快的小馬就不換下來）
