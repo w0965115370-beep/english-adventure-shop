@@ -209,6 +209,8 @@ body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,san
 #btn-skill{position:fixed;right:calc(40px + var(--sar));bottom:calc(150px + var(--sab));width:80px;height:80px;border-radius:50%;z-index:5;font-size:18px;font-weight:bold;
   background:#7a4ac8;border:4px solid #3a1a70;color:#fff;text-shadow:2px 2px 0 #3a1a70;box-shadow:inset -4px -5px 0 #5a2aa0,0 5px 0 #0007}
 #btn-skill:active{transform:translateY(3px)}
+#map-cv{width:100%;image-rendering:pixelated;border:3px solid #2b1d14;border-radius:4px;display:block;margin-top:8px}
+.map-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 #btn-a.dim{background:#888c90;border-color:#484c50;text-shadow:2px 2px 0 #484c50;box-shadow:inset -4px -5px 0 #686c70,0 5px 0 #0007}
 
 /* ---- 提示：小視窗，從上方滑入 ---- */
@@ -316,6 +318,7 @@ table.words{background:#fff}
 </div>
 <div id="objective" hidden></div>
 <div id="menu-btns" hidden>
+  <button data-open="map">地圖</button>
   <button data-open="bag">背包</button>
   <button data-open="quests">任務</button>
   <button data-open="words">單字本</button>
@@ -2473,7 +2476,7 @@ $("btn-skill").addEventListener("pointerdown", (ev) => { ev.preventDefault(); So
 $("btn-a").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); Sound.startMusic(); if (!modalOpen()) interact(currentTarget); });
 document.querySelectorAll("#menu-btns button").forEach((b) => b.addEventListener("click", () => {
   Sound.init(); Sound.sfx("click");
-  ({ bag: openBag, quests: openQuests, words: openWords, settings: openSettings, help: () => openHelp(),
+  ({ map: () => openMap(), bag: openBag, quests: openQuests, words: openWords, settings: openSettings, help: () => openHelp(),
      logout: () => talk("登出", "要存檔並登出嗎？\n下次點自己的名字，就能從現在的進度繼續玩。", [{ label: "存檔並登出", fn: logout }, { label: "繼續玩", alt: true }]) })[b.dataset.open]();
 }));
 
@@ -2608,6 +2611,50 @@ function updateMobs(dt) {
     const nx = m.x + dx / d * s, ny = m.y + dy / d * s;
     if (!blocked(nx, ny)) { m.x = nx; m.y = ny; } else m.to = null;
   }
+}
+
+/* ---------------- 地圖：看整個區域、自己在哪裡、目標在哪裡 ---------------- */
+const AREA_NAME = { village: "村子", forest: "森林", beach: "海邊", mine: "礦坑" };
+const BLD_NAME = { b_shop: "商店", b_mayor: "村長家", b_work: "工匠", b_hut: "小屋" };
+function openMap(name) {
+  const here = scene.name === "shop" ? "village" : scene.name;   // 在商店裡就看村子
+  name = name || here;
+  const open = ["village", "forest", ...(S.flags.beach ? ["beach"] : []), ...(S.flags.mine ? ["mine"] : [])];
+  const sc = scenes[name], s = 12, cv = document.createElement("canvas");
+  cv.width = sc.w * s; cv.height = sc.h * s;
+  const c = cv.getContext("2d"); c.imageSmoothingEnabled = false;
+  for (let y = 0; y < sc.h; y++) for (let x = 0; x < sc.w; x++) { const v = tileImgs[sc.tiles[y * sc.w + x]]; c.drawImage(v[0] || v, x * s, y * s, s, s); }
+  const placed = [], hit = (x, y, w) => placed.some((r) => x < r.x + r.w && r.x < x + w && y < r.y + 17 && r.y < y + 17);
+  const label = (text, x, y, bg, fg = "#fff") => {
+    c.font = "bold 13px sans-serif"; const w = c.measureText(text).width + 8;
+    x = clamp(x - w / 2, 0, cv.width - w); y = clamp(y, 0, cv.height - 17);
+    if (hit(x, y, w)) y = clamp(y + 30, 0, cv.height - 17);   // 名字擠在一起就改放到下面
+    placed.push({ x, y, w });
+    c.fillStyle = bg; c.fillRect(x, y, w, 17); c.fillStyle = fg; c.textBaseline = "top"; c.fillText(text, x + 4, y + 2);
+  };
+  for (const e of sc.ents) {
+    if (e.type === "building") { c.fillStyle = e.roof; c.fillRect(e.tx * s, e.ty * s, e.w * s, e.h * s); if (BLD_NAME[e.id]) label(BLD_NAME[e.id], (e.tx + e.w / 2) * s, (e.ty + e.h / 2) * s - 8, "#2b1d14"); }
+  }
+  for (const e of sc.ents) if (e.type === "npc" && !e.walker && entVisible(e)) { c.fillStyle = "#2b1d14"; c.fillRect(e.tx * s + 3, e.ty * s + 3, 6, 6); label(e.name, (e.tx + 0.5) * s, e.ty * s - 17, "#3a6ab0"); }
+  for (const w of sc.warps) if (open.includes(w.to)) label("往" + AREA_NAME[w.to], (w.x + w.w / 2) * s, w.y * s, "#2a7a3a");
+  // 目標：在這張地圖上就畫星星，在別的區域就標出口
+  const t = objectiveTarget();
+  if (t && t.e) {
+    const tsc = t.sc === "shop" ? "village" : t.sc, te = t.sc === "shop" ? { tx: 8, ty: 8, w: 1, h: 1 } : t.e;
+    let pt = null;
+    if (tsc === name) pt = { x: (te.tx + te.w / 2) * s, y: (te.ty + te.h / 2) * s };
+    else { const via = name !== "village" ? "village" : tsc, w = sc.warps.find((x) => x.to === via); if (w) pt = { x: (w.x + w.w / 2) * s, y: w.y * s + (w.y > sc.h / 2 ? -14 : 30) }; }   // 星星放在出口名字旁邊
+    if (pt) { c.fillStyle = "#ffd84a"; c.strokeStyle = "#2b1d14"; c.lineWidth = 2; c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 5 : 11, a = -Math.PI / 2 + i * Math.PI / 5; c.lineTo(pt.x + Math.cos(a) * r, pt.y + Math.sin(a) * r); } c.closePath(); c.fill(); c.stroke(); }
+  }
+  if (name === here) {
+    const px = scene.name === "shop" ? 8.5 * s : player.x / T * s, py = scene.name === "shop" ? 9 * s : (player.y - 6) / T * s;
+    c.fillStyle = "#fff"; c.beginPath(); c.arc(px, py, 8, 0, 7); c.fill(); c.fillStyle = "#e0281c"; c.beginPath(); c.arc(px, py, 5.5, 0, 7); c.fill();
+    label("你", px, py + 9, "#e0281c");
+  }
+  const tabs = open.map((n) => `<button class="btn small ${n === name ? "" : "alt"}" data-act="m_${n}">${AREA_NAME[n]}${n === here ? "（你在這）" : ""}</button>`).join("");
+  const hd = { __closable: true }; for (const n of open) hd["m_" + n] = () => openMap(n);
+  openModal(`${closeBtn}<h2>地圖・${AREA_NAME[name]}</h2><p class="muted">紅點是你，黃色星星是現在的目標。</p><div class="map-tabs">${tabs}</div><div id="map-wrap"></div>`, hd);
+  $("map-wrap").appendChild(cv); cv.id = "map-cv";
 }
 
 /* ---------------- 魔法技能 ---------------- */
