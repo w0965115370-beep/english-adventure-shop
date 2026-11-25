@@ -209,6 +209,8 @@ body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,san
 #btn-skill{position:fixed;right:calc(40px + var(--sar));bottom:calc(150px + var(--sab));width:80px;height:80px;border-radius:50%;z-index:5;font-size:18px;font-weight:bold;
   background:#7a4ac8;border:4px solid #3a1a70;color:#fff;text-shadow:2px 2px 0 #3a1a70;box-shadow:inset -4px -5px 0 #5a2aa0,0 5px 0 #0007}
 #btn-skill:active{transform:translateY(3px)}
+#minimap{position:fixed;top:calc(8px + var(--sat));right:calc(14px + var(--sar) + var(--menu-w,130px));width:160px;z-index:5;cursor:pointer;image-rendering:pixelated;border:3px solid var(--win-line);border-radius:6px;box-shadow:0 4px 0 #0006;background:#183028}
+@media (max-width:700px){#minimap{width:110px}}
 #map-cv{width:100%;image-rendering:pixelated;border:3px solid #2b1d14;border-radius:4px;display:block;margin-top:8px}
 .map-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 #btn-a.dim{background:#888c90;border-color:#484c50;text-shadow:2px 2px 0 #484c50;box-shadow:inset -4px -5px 0 #686c70,0 5px 0 #0007}
@@ -317,6 +319,7 @@ table.words{background:#fff}
   <div class="hud-box" id="hud-bag"></div>
 </div>
 <div id="objective" hidden></div>
+<canvas id="minimap" hidden title="打開地圖"></canvas>
 <div id="menu-btns" hidden>
   <button data-open="map">地圖</button>
   <button data-open="bag">背包</button>
@@ -2473,6 +2476,7 @@ function joyIdle() { const b = document.getElementById("joy-base"), k = document
 const joyEnd = (ev) => { if (ev.pointerId !== input.joyId) return; input.joyId = null; input.jx = input.jy = 0; joyIdle(); };
 joyZone.addEventListener("pointerup", joyEnd); joyZone.addEventListener("pointercancel", joyEnd);
 $("btn-skill").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); if (!modalOpen() && S) openSkills(); });
+$("minimap").addEventListener("click", () => { Sound.init(); Sound.sfx("click"); if (!modalOpen() && S) openMap(); });
 $("btn-a").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); Sound.startMusic(); if (!modalOpen()) interact(currentTarget); });
 document.querySelectorAll("#menu-btns button").forEach((b) => b.addEventListener("click", () => {
   Sound.init(); Sound.sfx("click");
@@ -2616,11 +2620,11 @@ function updateMobs(dt) {
 /* ---------------- 地圖：看整個區域、自己在哪裡、目標在哪裡 ---------------- */
 const AREA_NAME = { village: "村子", forest: "森林", beach: "海邊", mine: "礦坑" };
 const BLD_NAME = { b_shop: "商店", b_mayor: "村長家", b_work: "工匠", b_hut: "小屋" };
-function openMap(name) {
-  const here = scene.name === "shop" ? "village" : scene.name;   // 在商店裡就看村子
-  name = name || here;
+const mapHere = () => scene.name === "shop" ? "village" : scene.name;   // 在商店裡就看村子
+// full=false 是右上角的小地圖：只畫地形、建築、目標星星和你
+function drawMap(cv, name, s, full) {
+  const here = mapHere(), sc = scenes[name];
   const open = ["village", "forest", ...(S.flags.beach ? ["beach"] : []), ...(S.flags.mine ? ["mine"] : [])];
-  const sc = scenes[name], s = 12, cv = document.createElement("canvas");
   cv.width = sc.w * s; cv.height = sc.h * s;
   const c = cv.getContext("2d"); c.imageSmoothingEnabled = false;
   for (let y = 0; y < sc.h; y++) for (let x = 0; x < sc.w; x++) { const v = tileImgs[sc.tiles[y * sc.w + x]]; c.drawImage(v[0] || v, x * s, y * s, s, s); }
@@ -2633,10 +2637,10 @@ function openMap(name) {
     c.fillStyle = bg; c.fillRect(x, y, w, 17); c.fillStyle = fg; c.textBaseline = "top"; c.fillText(text, x + 4, y + 2);
   };
   for (const e of sc.ents) {
-    if (e.type === "building") { c.fillStyle = e.roof; c.fillRect(e.tx * s, e.ty * s, e.w * s, e.h * s); if (BLD_NAME[e.id]) label(BLD_NAME[e.id], (e.tx + e.w / 2) * s, (e.ty + e.h / 2) * s - 8, "#2b1d14"); }
+    if (e.type === "building") { c.fillStyle = e.roof; c.fillRect(e.tx * s, e.ty * s, e.w * s, e.h * s); if (full && BLD_NAME[e.id]) label(BLD_NAME[e.id], (e.tx + e.w / 2) * s, (e.ty + e.h / 2) * s - 8, "#2b1d14"); }
   }
-  for (const e of sc.ents) if (e.type === "npc" && !e.walker && entVisible(e)) { c.fillStyle = "#2b1d14"; c.fillRect(e.tx * s + 3, e.ty * s + 3, 6, 6); label(e.name, (e.tx + 0.5) * s, e.ty * s - 17, "#3a6ab0"); }
-  for (const w of sc.warps) if (open.includes(w.to)) label("往" + AREA_NAME[w.to], (w.x + w.w / 2) * s, w.y * s, "#2a7a3a");
+  if (full) for (const e of sc.ents) if (e.type === "npc" && !e.walker && entVisible(e)) { c.fillStyle = "#2b1d14"; c.fillRect(e.tx * s + 3, e.ty * s + 3, 6, 6); label(e.name, (e.tx + 0.5) * s, e.ty * s - 17, "#3a6ab0"); }
+  if (full) for (const w of sc.warps) if (open.includes(w.to)) label("往" + AREA_NAME[w.to], (w.x + w.w / 2) * s, w.y * s, "#2a7a3a");
   // 目標：在這張地圖上就畫星星，在別的區域就標出口
   const t = objectiveTarget();
   if (t && t.e) {
@@ -2649,8 +2653,13 @@ function openMap(name) {
   if (name === here) {
     const px = scene.name === "shop" ? 8.5 * s : player.x / T * s, py = scene.name === "shop" ? 9 * s : (player.y - 6) / T * s;
     c.fillStyle = "#fff"; c.beginPath(); c.arc(px, py, 8, 0, 7); c.fill(); c.fillStyle = "#e0281c"; c.beginPath(); c.arc(px, py, 5.5, 0, 7); c.fill();
-    label("你", px, py + 9, "#e0281c");
+    if (full) label("你", px, py + 9, "#e0281c");
   }
+  return open;
+}
+function openMap(name) {
+  const here = mapHere(); name = name || here;
+  const cv = document.createElement("canvas"), open = drawMap(cv, name, 12, true);
   const tabs = open.map((n) => `<button class="btn small ${n === name ? "" : "alt"}" data-act="m_${n}">${AREA_NAME[n]}${n === here ? "（你在這）" : ""}</button>`).join("");
   const hd = { __closable: true }; for (const n of open) hd["m_" + n] = () => openMap(n);
   openModal(`${closeBtn}<h2>地圖・${AREA_NAME[name]}</h2><p class="muted">紅點是你，黃色星星是現在的目標。</p><div class="map-tabs">${tabs}</div><div id="map-wrap"></div>`, hd);
@@ -3495,6 +3504,8 @@ cv.addEventListener("pointerdown", (ev) => {
 });
 
 function updateHud() {
+  drawMap($("minimap"), mapHere(), 4, false);
+  const mw = $("menu-btns").offsetWidth; if (mw && mw !== updateHud.mw) { updateHud.mw = mw; document.documentElement.style.setProperty("--menu-w", mw + "px"); }
   const hh = $("hud").offsetHeight; if (hh && hh !== updateHud.hh) { updateHud.hh = hh; document.documentElement.style.setProperty("--hud-h", hh + 8 + "px"); }
   if (!S) return;
   $("hud-coins").textContent = S.coins;
@@ -3514,7 +3525,7 @@ function loop(now) {
 }
 
 /* ---------------- 開始／登出 ---------------- */
-function showGameUI(on) { for (const id of ["hud", "objective", "menu-btns", "joy-zone", "btn-a"]) $(id).hidden = !on; if (!on) { raid = null; mobs = []; $("btn-skill").hidden = true; $("alarm").hidden = true; for (const sp of speeches) sp.el.remove(); speeches.length = 0; } }
+function showGameUI(on) { for (const id of ["hud", "objective", "minimap", "menu-btns", "joy-zone", "btn-a"]) $(id).hidden = !on; if (!on) { raid = null; mobs = []; $("btn-skill").hidden = true; $("alarm").hidden = true; for (const sp of speeches) sp.el.remove(); speeches.length = 0; } }
 function startGame(save) {
   S = save;
   // 舊存檔補欄位
