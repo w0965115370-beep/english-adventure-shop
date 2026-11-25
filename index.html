@@ -158,6 +158,11 @@ ol.steps{padding-left:22px;line-height:1.7;font-size:16px;margin:6px 0}
 
 #fade{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;z-index:7}
 #fade.on{opacity:1}
+#place{position:fixed;left:50%;top:32%;transform:translate(-50%,-50%);z-index:6;pointer-events:none;opacity:0;text-align:center;color:#fff;
+  text-shadow:0 3px 0 #2b1d14,0 0 12px #0008;letter-spacing:4px}
+#place b{display:block;font-size:44px}#place small{display:block;font-size:18px;letter-spacing:3px;margin-top:2px}
+#place.show{animation:place 2.8s ease forwards}
+@keyframes place{0%{opacity:0;transform:translate(-50%,-30%)}15%{opacity:1;transform:translate(-50%,-50%)}75%{opacity:1}100%{opacity:0}}
 @media (max-height:500px){
   .q-prompt{font-size:34px;margin:6px 0 2px}.q-opt{min-height:56px;font-size:22px}
   #btn-a{width:88px;height:88px}#joy-base{width:112px;height:112px;margin:-56px 0 0 -56px}
@@ -340,6 +345,7 @@ table.words{background:#fff}
 <div id="bubbles"></div>
 <div id="modal" hidden><div id="modal-box"></div></div>
 <div id="fade"></div>
+<div id="place" aria-live="polite"></div>
 
 <div id="title">
   <div class="card">
@@ -591,6 +597,7 @@ const ITEMS = {
   coal:     { zh: "煤炭", en: "coal", price: 8 },
   iron:     { zh: "鐵礦", en: "iron", price: 14 },
   gem:      { zh: "寶石", en: "gem",  price: 35 },
+  bread:    { zh: "麵包", en: "bread", price: 15 },   // 第四章：海風鎮麵包店買得到
   lamp:     { zh: "礦燈",     en: "lamp",  price: 60,  crafted: true },
   ring:     { zh: "寶石戒指", en: "ring",  price: 95,  crafted: true },
   crown:    { zh: "寶石皇冠", en: "crown", price: 230, crafted: true },
@@ -748,7 +755,14 @@ const MAIN = [
   "做一件夾克（jacket），送給海邊的漁夫阿海",
   "做一件外套（coat），送給礦坑深處的礦工老石",
   "穿上（wear）夾克或外套，去找村長參加冬日祭典",
-  "主線完成！做衣服、挖礦、保護村莊",
+  // ---- 第四章：海的另一邊 ----
+  "第四章：去貝殼海灘找船長阿帆，聽說海的另一邊有個小鎮",
+  "付 30 金搭船（boat），到海的另一邊",
+  "在海風鎮找鎮長海莉打招呼",
+  "走進你在海風鎮的新商店",
+  "認識鎮上的新朋友：鐵匠阿鋼、市場阿潮、麵包師小麥",
+  "在海風鎮東邊挖 5 個鐵礦＋3 個煤炭，交給燈塔守衛阿光",
+  "主線完成！在海風鎮開店、冒險",
 ];
 const SEED_SHOP = "綠芽種子店";
 // 交通工具：在戶外騎乘，移動更快
@@ -756,6 +770,7 @@ const VEHICLES = {
   skate: { name: "滑板",   en: "skateboard", speed: 0.35, cost: 150 },
   bike:  { name: "腳踏車", en: "bike",       speed: 0.75, cost: 400 },
   horse: { name: "小馬",   en: "horse",      speed: 1.2,  cost: 900 },
+  cloud:  { name: "雲朵",  en: "cloud",      speed: 1.6,  cost: 0, fly: true, gift: true },   // 老師送的，不在車行賣；可以飛過障礙物
 };
 // 武器：用來把搗亂的動物趕出村子
 const WEAPONS = {
@@ -831,7 +846,13 @@ const MAIN_HINT = [
   "夾克＝3 塊布＋1 個鐵礦，在工作台拼出 j-a-c-k-e-t，再拿到海邊給漁夫阿海",
   "外套＝4 塊布＋2 個貝殼，在工作台拼出 c-o-a-t，再拿到礦坑深處給礦工老石",
   "給自己做一件夾克或外套，打開背包按「穿上 wear」，再去找村長",
-  "打開右上角「任務」做每日任務；聽到警報就回村子趕走動物！",
+  "從村子右下角的路走到海灘，船長阿帆在船旁邊，按「對話」",
+  "跟船長阿帆說話，選「付 30 金搭船」。錢不夠就先去賺錢",
+  "鎮長海莉在鎮公所前面，按「對話」",
+  "新商店在麵包店右邊，跟著箭頭走進門",
+  "跟著箭頭找到他們，按「對話」",
+  "鐵礦和煤炭在海風鎮右下角的岩石區。都夠了就去燈塔找阿光",
+  "打開右上角「任務」做每日任務，多賣東西讓商店越來越厲害！",
 ];
 
 /* ---------------- 像素圖繪製 ---------------- */
@@ -929,6 +950,8 @@ function makeIcons() {
   ICONS.up_decor = mk(16, 16, (g) => { P(g, 7, 1, "#5a3a20", 2, 3); P(g, 4, 4, "#5a3a20", 8, 2); P(g, 5, 6, "#ffe080", 6, 6); P(g, 6, 7, "#fff7d0", 2, 3); P(g, 4, 12, "#5a3a20", 8, 2); P(g, 1, 8, "#ffe08088", 2, 1); P(g, 13, 8, "#ffe08088", 2, 1); P(g, 7, 14, "#5a3a20", 2, 2); });
   ICONS.v_skate = mk(16, 16, (g) => { P(g, 1, 8, "#d04a4a", 14, 3); P(g, 0, 7, "#d04a4a", 2, 2); P(g, 14, 7, "#d04a4a", 2, 2); P(g, 2, 8, "#f08a6a", 12, 1); circle(g, 4, 12, 1, "#2b1d14"); circle(g, 12, 12, 1, "#2b1d14"); });
   ICONS.v_bike = mk(16, 16, (g) => { for (const x of [4, 12]) { circle(g, x, 11, 3, "#2b1d14"); circle(g, x, 11, 2, "#c8c8d0"); P(g, x, 11, "#2b1d14"); } P(g, 4, 7, "#3a7ad0", 8, 2); P(g, 7, 7, "#3a7ad0", 2, 4); P(g, 11, 3, "#2b1d14", 2, 5); P(g, 10, 3, "#8a8a9a", 4, 1); P(g, 3, 5, "#2b1d14", 3, 1); });
+  ICONS.bread = mk(16, 16, (g) => { P(g, 2, 6, "#b06a28", 12, 7); P(g, 3, 5, "#c88a40", 10, 2); P(g, 2, 7, "#e0a858", 12, 4); P(g, 4, 6, "#f0c880", 2, 1); for (const x of [5, 8, 11]) P(g, x, 7, "#a05a20", 1, 3); P(g, 2, 12, "#8a4a18", 12, 1); });
+  ICONS.v_cloud = mk(16, 16, (g) => { for (const [x, y, r] of [[4, 10, 3], [12, 10, 3], [6, 7, 4], [10, 7, 4], [8, 10, 3]]) circle(g, x, y, r + 1, "#a8c8e8"); for (const [x, y, r] of [[4, 10, 3], [12, 10, 3], [6, 7, 4], [10, 7, 4], [8, 10, 3]]) circle(g, x, y, r, "#ffffff"); P(g, 2, 12, "#dce8f4", 12, 1); });
   ICONS.v_horse = mk(16, 16, (g) => { P(g, 2, 6, "#a0683a", 10, 5); P(g, 2, 6, "#b8804a", 10, 1); P(g, 10, 1, "#a0683a", 4, 7); P(g, 13, 3, "#a0683a", 2, 2); P(g, 12, 2, "#2b1d14"); P(g, 9, 1, "#5a3a20", 2, 6); P(g, 0, 6, "#5a3a20", 2, 5); for (const x of [3, 5, 9, 11]) P(g, x, 11, "#6b4226", 1, 4); P(g, 5, 5, "#d04a4a", 4, 2); });
   ICONS.w_knife = mk(16, 16, (g) => { for (let i = 0; i < 7; i++) P(g, 7 + i, 8 - i, "#c8d0dc", 2, 2); P(g, 8, 7, "#ffffff", 1, 1); P(g, 5, 8, "#6b4226", 3, 3); for (let i = 0; i < 4; i++) P(g, 2 + i, 13 - i, "#8b5a2b", 2, 2); });
   ICONS.w_sword = mk(16, 16, (g) => { for (let i = 0; i < 9; i++) P(g, 5 + i, 10 - i, "#c8d0dc", 2, 2); for (let i = 0; i < 9; i++) P(g, 6 + i, 10 - i, "#ffffff", 1, 1); P(g, 2, 9, "#e0b040", 6, 2); P(g, 4, 7, "#e0b040", 2, 6); for (let i = 0; i < 3; i++) P(g, 1 + i, 14 - i, "#6b4226", 2, 2); });
@@ -1116,11 +1139,53 @@ function buildBeach() {
   for (const [x, y] of [[6, 15], [11, 16], [16, 14], [22, 15], [27, 16], [32, 14], [35, 15], [8, 12], [24, 11]]) node("shell", x, y);
   addEnt(sc, { id: "b_chest", type: "node", kind: "chest", loot: ["shell", "coconut"], tx: 37, ty: 14, clearTo: TILE.SAND });
   addEnt(sc, { id: "b_hut", type: "building", tx: 27, ty: 4, w: 5, h: 5, solid: true, door: { x: 29, y: 8 }, closed: true, roof: "#2a8a8a", roofDark: "#1c6060" });
+  addEnt(sc, { id: "boat", type: "boat", tx: 12, ty: 18, w: 4, h: 2 });
+  addEnt(sc, { id: "captain", type: "npc", name: "船長阿帆", tx: 14, ty: 15, solid: true, dir: "down", look: { hair: "#e8e8e8", shirt: "#2a4a8a", pants: "#2b2b3a" } });
   addEnt(sc, { id: "fisherman", type: "npc", name: "漁夫阿海", tx: 25, ty: 10, solid: true, dir: "down", look: { hair: "#3a2a1a", shirt: "#e8e0d0", pants: "#3a5a8a" } });
   walker(sc, "w_tour", "遊客小美", 15, 10, { hair: "#e0b040", shirt: "#e07aa0", style: "girl", ribbon: "#3a7ad0" }, ["Hello! 我是來玩的遊客。", "海邊的貝殼好漂亮！", "Wow! 這裡的椰子好好喝！"]);
   walker(sc, "w_surf", "衝浪阿翔", 31, 12, { hair: "#c06a3a", shirt: "#3a7ad0" }, ["Cool! 今天的浪好大！", "Let's go swimming! 一起去游泳吧！", "聽說漁夫阿海知道很多事情。"]);
   sc.warps.push({ x: 19, y: 0, w: 2, h: 1, to: "village", tx: 31, ty: 23.4, dir: "up" });
   sc.spawn = { tx: 20, ty: 2.6 };
+  rebuildSolid(sc); return sc;
+}
+// 第四章：海的另一邊（只能搭船來回）。商店會搬到這裡
+function buildTown() {
+  const sc = makeScene("town", 40, 24, TILE.GRASS);
+  rect(sc, 0, 0, 39, 0, TILE.TREE); rect(sc, 0, 0, 0, 23, TILE.TREE); rect(sc, 39, 0, 39, 23, TILE.TREE);
+  rect(sc, 0, 16, 39, 18, TILE.SAND); rect(sc, 0, 19, 39, 23, TILE.WATER);
+  rect(sc, 1, 11, 38, 12, TILE.PATH); rect(sc, 19, 13, 20, 18, TILE.PATH);
+  for (const x of [5, 13, 21, 28, 35]) rect(sc, x, 8, x, 10, TILE.PATH);
+  const bld = (id, tx, w, h, doorX, roof, roofDark, sign) => addEnt(sc, { id, type: "building", tx, ty: 8 - h, w, h, solid: true, door: { x: doorX, y: 7 }, closed: true, roof, roofDark, sign });
+  bld("b_townhall", 2, 7, 5, 5, "#c08a2a", "#8a6018", "TOWN");
+  bld("b_bakery", 10, 7, 5, 13, "#d06a8a", "#a04a68", "BREAD");
+  bld("b_myshop", 18, 7, 5, 21, "#b04a3a", "#7e2f24", "SHOP");
+  bld("b_smith", 25, 7, 5, 28, "#6a6a7a", "#484858", "TOOLS");
+  bld("b_light", 33, 5, 5, 35, "#e03a3a", "#a02020");
+  const npc = (id, name, tx, ty, look) => addEnt(sc, { id, type: "npc", name, tx, ty, solid: true, dir: "down", look });
+  npc("t_mayor", "鎮長海莉", 7, 9, { hair: "#8a4a2a", shirt: "#c08a2a", style: "girl", ribbon: "#3a7ad0" });
+  npc("baker", "麵包師小麥", 15, 9, { hair: "#f0d8a0", shirt: "#f4f4f8", style: "girl", ribbon: "#d06a8a" });
+  npc("smith", "鐵匠阿鋼", 30, 9, { hair: "#2b1d14", shirt: "#8a4a2a", pants: "#3a3a4a" });
+  npc("keeper", "燈塔守衛阿光", 37, 9, { hair: "#4a4a4a", shirt: "#e8e0d0", pants: "#2a4a8a" });
+  // 市場攤位（種子、英文訂單）
+  addEnt(sc, { id: "stall_t", type: "stall", tx: 9, ty: 14, w: 3, h: 1, solid: true });
+  npc("market", "市場阿潮", 12, 14, { hair: "#3a6a8a", shirt: "#e0a020", pants: "#3a4a6a" });
+  // 採集：左邊小樹林、草地上的花和莓果、海灘貝殼、右下角岩石區的鐵礦和煤炭
+  const node = (kind, x, y) => addEnt(sc, { id: `t_${kind}_${x}_${y}`, type: "node", kind, tx: x, ty: y, solid: kind === "tree" || kind === "iron" || kind === "coal", clearTo: y >= 16 ? TILE.SAND : TILE.GRASS });
+  for (const [x, y] of [[2, 13], [4, 14], [2, 15], [6, 13]]) node("tree", x, y);
+  for (const [x, y] of [[15, 14], [24, 13]]) node("bush", x, y);
+  for (const [x, y] of [[17, 15], [23, 15]]) node("flower", x, y);
+  node("herb", 6, 15);
+  for (const [x, y] of [[4, 17], [11, 17], [16, 18], [35, 17]]) node("shell", x, y);
+  for (const [x, y] of [[29, 14], [32, 13], [36, 14]]) node("iron", x, y);
+  for (const [x, y] of [[30, 16], [34, 15], [37, 16]]) node("coal", x, y);
+  rect(sc, 28, 13, 38, 15, TILE.SAND);   // 岩石區的地面
+  for (const [x, y] of [[29, 14], [32, 13], [36, 14], [34, 15]]) setTile(sc, x, y, TILE.SAND);
+  addEnt(sc, { id: "dock_t", type: "dock", tx: 26, ty: 18 });   // 海邊釣魚
+  addEnt(sc, { id: "boat", type: "boat", tx: 21, ty: 19, w: 4, h: 2 });
+  npc("captain_t", "船長阿帆", 22, 16, { hair: "#e8e8e8", shirt: "#2a4a8a", pants: "#2b2b3a" });
+  walker(sc, "w_sailor", "水手阿浪", 27, 12, { hair: "#2b1d14", shirt: "#3a6ab0" }, ["Ahoy! 我每天都在海上。", "Look! 那是燈塔（lighthouse）。", "The sea is big! 海好大！"]);
+  walker(sc, "w_kid_t", "小海", 14, 12, { hair: "#c06a3a", shirt: "#58b368" }, ["Hi! 你是新來的老闆嗎？", "I like bread! 小麥的麵包最好吃！", "Let's go to the beach! 去海邊玩！"]);
+  sc.spawn = { tx: 20.5, ty: 15.4 };
   rebuildSolid(sc); return sc;
 }
 function buildMine() {
@@ -1703,6 +1768,62 @@ function talkNpc(e) {
       { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "雜貨婆婆")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
   }
   if (e.id === "wheel") return talk("車行阿輪", st >= 5 ? pick(NPC_IDLE.wheel) : "歡迎光臨阿輪車行！等你賺到錢再來看看吧！", [{ label: "看交通工具", fn: openVehicles }, { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "車行阿輪")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
+  if (e.id === "captain" || e.id === "captain_t") {
+    const there = e.id === "captain_t", fare = 30;
+    if (st < 34) return talk("船長阿帆", ["Ahoy! 我是船長阿帆。", "我的船（boat）可以開到海的另一邊，不過最近海上風浪太大了。", "等你在村子裡幫完大家的忙，再來找我吧！"]);
+    const ride = () => {
+      if (S.coins < fare) return toast(`船票要 ${fare} 金，你只有 ${S.coins} 金`, "bad");
+      S.coins -= fare; S.flags.town = true; Sound.sfx("door");
+      fade(() => { if (there) enterScene("beach", 14.5, 16.6, "up"); else { enterScene("town", 22.5, 17.6, "up"); if (S.main.step === 35) advanceMain(36); } writeSave(); });
+    };
+    const lines = there ? ["要回貝殼海灘嗎？", `船票一樣是 ${fare} 金喔。`] : st === 34 ? ["Ahoy! 你就是那位有名的小老闆吧？", "海的另一邊有一個小鎮，叫做海風鎮（Seabreeze Town）。", `搭我的船（boat）過去，船票 ${fare} 金。`] : ["Ahoy! 要搭船（boat）去海風鎮嗎？", `船票 ${fare} 金。`];
+    if (st === 34) advanceMain(35);
+    return talk("船長阿帆", lines, [{ label: `付 ${fare} 金搭船`, fn: ride }, ...(there ? [{ label: "看交通工具", fn: openVehicles }] : []), { label: "等一下", alt: true }]);
+  }
+  if (e.id === "t_mayor") {
+    if (st === 36) return talk("鎮長海莉", ["Welcome to Seabreeze Town! 歡迎來到海風鎮！", "我是鎮長海莉。我聽說過你的商店喔！", "鎮上剛好有一間空店面，就在麵包店旁邊。", "要不要把商店搬來海風鎮？這裡的客人更多喔！"], [
+      { label: "好！搬到海風鎮", fn: () => { S.flags.shopTown = true; applyFlags(); Sound.sfx("up"); toast("商店搬到海風鎮了！在麵包店右邊", "gold"); advanceMain(37); writeSave(); } }]);
+    if (npcQuiz(e, "鎮長海莉")) return;
+    return talk("鎮長海莉", pick(["海風鎮的海風最舒服了！", "有空常來玩喔！", S.flags.light ? "Thank you! 燈塔修好了，大家都很開心！" : "燈塔壞掉了，阿光很煩惱……"]));
+  }
+  // 第四章：認識鎮上的新朋友（三位都說過話就過關）
+  const meet = () => {
+    if (st !== 38 || !["smith", "market", "baker"].includes(e.id)) return;
+    S.main.met = [...new Set([...(S.main.met || []), e.id])]; markDirty();
+    if (S.main.met.length >= 3) advanceMain(39);
+    else toast(`認識新朋友：${S.main.met.length} / 3`, "gold");
+  };
+  if (e.id === "smith") {
+    meet();
+    return talk("鐵匠阿鋼", st === 38 ? ["Hello! 我是鐵匠（blacksmith）阿鋼。", "工具要升級、要買武器，都可以來找我！"] : pick(["叮叮噹噹～今天也要打鐵！", "好工具讓工作事半功倍！"]), [
+      { label: "我要升級", fn: openUpgrades }, { label: "買武器", fn: openWeapons }, { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "鐵匠阿鋼")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
+  }
+  if (e.id === "market") {
+    meet();
+    return talk("市場阿潮", st === 38 ? ["Hi! 歡迎來到海風市場（market）！", "我這裡有種子，每天也有一張英文訂單喔。"] : S.order && !S.order.done ? "我今天有一張英文訂單，你看得懂嗎？" : pick(["新鮮的種子喔！", "今天的訂單完成了嗎？"]), [
+      { label: "看英文訂單", fn: showOrder }, { label: "買種子", fn: openSeedShop }, { label: "每日任務", fn: openQuests }, { label: "再見", alt: true }]);
+  }
+  if (e.id === "baker") {
+    meet();
+    const buy = (n) => () => {
+      const cost = n * 10;
+      if (S.coins < cost) return toast(`要 ${cost} 金，你只有 ${S.coins} 金`, "bad");
+      if (invCount() + n > capacity()) return toast("背包放不下了！", "bad");
+      S.coins -= cost; addItem("bread", n); Sound.sfx("coin"); toast(`買了 ${n} 個麵包（bread）！放上貨架可以賣 15 金`, "gold"); writeSave();
+    };
+    return talk("麵包師小麥", st === 38 ? ["Good morning! 我是麵包師（baker）小麥。", "我的麵包（bread）一個 10 金，放到你的店裡可以賣 15 金喔！"] : pick(["剛出爐的 bread，好香喔！", "I like cake! 我最會做蛋糕了。"]), [
+      { label: "買 1 個麵包（10 金）", fn: buy(1) }, { label: "買 5 個麵包（50 金）", fn: buy(5) }, { label: "英文挑戰", fn: () => { if (!npcQuiz(e, "麵包師小麥")) toast("今天已經挑戰過囉，明天再來"); } }, { label: "再見", alt: true }]);
+  }
+  if (e.id === "keeper") {
+    if (st === 39) {
+      if (has({ iron: 5, coal: 3 })) return talk("燈塔守衛阿光", "你帶來鐵礦和煤炭了！要交給我修燈塔嗎？", [
+        { label: "交出 5 鐵礦＋3 煤炭", fn: () => { takeItems({ iron: 5, coal: 3 }); S.flags.light = true; talk("燈塔守衛阿光", ["燈塔修好了！The light is on! 燈亮了！", "晚上船再也不會迷路了。這是全鎮送你的謝禮：300 金！"], null, () => { giveReward({ coins: 300 }); Sound.sfx("up"); advanceMain(40); }); } },
+        { label: "等一下", alt: true }]);
+      return talk("燈塔守衛阿光", `修燈塔需要 5 個鐵礦和 3 個煤炭。\n你現在有鐵礦 ${S.inv.iron || 0}、煤炭 ${S.inv.coal || 0}。\n鎮上右下角的岩石區就挖得到。`);
+    }
+    if (npcQuiz(e, "燈塔守衛阿光")) return;
+    return talk("燈塔守衛阿光", S.flags.light ? "燈塔每天晚上都會亮，船再也不會迷路了！" : "燈塔（lighthouse）可以在晚上幫船指路。");
+  }
   if (e.id === "fisherman") {
     if (st === 12) return talk("漁夫阿海", ["喔！你就是村子裡開商店的小老闆吧？", "跟你說，最近野豬、浣熊和烏鴉常常跑進村子，偷吃田裡的作物……", "聽到警報的時候，要趕快回村子把牠們趕走！", "你先到工匠阿木那裡買一把武器吧。小刀只要 80 金。"], null, () => advanceMain(13));
     if (st === 16) {
@@ -2363,16 +2484,16 @@ function openSettings() {
   $("set-speak").onchange = (ev) => { s.speak = ev.target.checked; markDirty(); };
 }
 function openVehicles() {
-  const rows = Object.entries(VEHICLES).map(([id, v]) => {
+  const rows = Object.entries(VEHICLES).filter(([id, v]) => !v.gift || S.vehicles.includes(id)).map(([id, v]) => {
     const own = S.vehicles.includes(id), riding = S.ride === id;
     return `<div class="row"><img src="${icon("v_" + id)}" alt=""><div class="grow"><div class="t">${v.name} <span class="muted">${v.en}</span>${riding ? "（騎乘中）" : ""}</div>
-      <div class="d">在戶外移動速度 +${Math.round(v.speed * 100)}%${own ? "" : `・${v.cost} 金`}</div></div>
+      <div class="d">在戶外移動速度 +${Math.round(v.speed * 100)}%${v.fly ? "・可以飛過障礙物" : ""}${own ? "" : `・${v.cost} 金`}</div></div>
       ${own ? (riding ? `<button class="btn small alt" data-act="off">下車</button>` : `<button class="btn small" data-act="ride_${id}">騎這個</button>`)
         : `<button class="btn small" data-act="buy_${id}" ${S.coins >= v.cost ? "" : "disabled"}>買</button>`}</div>`;
   }).join("");
   const h = { __closable: true, off: () => { S.ride = null; markDirty(); openVehicles(); } };
   for (const [id, v] of Object.entries(VEHICLES)) {
-    h["buy_" + id] = () => { if (S.coins < v.cost || S.vehicles.includes(id)) return; S.coins -= v.cost; S.vehicles.push(id); S.ride = id; Sound.sfx("up"); toast(`買了${v.name}（${v.en}）！在戶外會自動騎乘`, "gold"); writeSave(); openVehicles(); };
+    h["buy_" + id] = () => { if (v.gift || S.coins < v.cost || S.vehicles.includes(id)) return; S.coins -= v.cost; S.vehicles.push(id); S.ride = id; Sound.sfx("up"); toast(`買了${v.name}（${v.en}）！在戶外會自動騎乘`, "gold"); writeSave(); openVehicles(); };
     h["ride_" + id] = () => { S.ride = id; markDirty(); openVehicles(); };
   }
   openModal(`${closeBtn}<h2>阿輪車行</h2><p class="muted">你有 ${S.coins} 金。買了交通工具，在村子、森林、海邊走路都會變快（商店裡面不能騎）。</p><div class="list">${rows}</div>`, h);
@@ -2549,7 +2670,7 @@ function endRaid() {
 }
 function maybeScheduleRaid() {
   if (S.main.step === 14) return startRaid(true);   // 主線的入侵沒有存檔，重新整理或重新登入後要再來一次
-  if (S.main.step < 15) return;
+  if (S.main.step < 15 || S.flags.shopTown) return;   // shortcut: 搬家後就沒有入侵；之後想要可以在海風鎮做一套
   const day0 = gameDay() * DAY;
   if (S.nextRaid === null || S.nextRaid === undefined || S.nextRaid < day0) {
     S.nextRaid = rand() < 0.75 ? day0 + randInt(9 * 60, 16 * 60) : day0 + DAY + randInt(9 * 60, 16 * 60);
@@ -2623,14 +2744,28 @@ function updateMobs(dt) {
 }
 
 /* ---------------- 地圖：看整個區域、自己在哪裡、目標在哪裡 ---------------- */
-const AREA_NAME = { village: "村子", forest: "森林", beach: "海邊", mine: "礦坑" };
-const BLD_NAME = { b_shop: ["商店", "擺貨賣東西"], b_mayor: ["村長家", "主線任務"], b_work: ["工匠", "升級・買武器"], b_hut: ["漁夫小屋", ""] };
-const NPC_ROLE = { mayor: "主線任務", craft: "升級・武器", granny: "種子・訂單", tailor: "做衣服", fisher: "釣魚", wheel: "交通工具", mage: "學魔法" };
-const mapHere = () => scene.name === "shop" ? "village" : scene.name;   // 在商店裡就看村子
+const AREA_NAME = { village: "村子", forest: "森林", beach: "海邊", mine: "礦坑", town: "海風鎮" };
+// 每到一個地方會跳出的地名（商店在村子裡，不另外跳）
+const AREA_TITLE = { village: ["橡果村", "Acorn Village"], forest: ["綠葉森林", "Green Forest"], beach: ["貝殼海灘", "Shell Beach"], mine: ["老礦坑", "Old Mine"], town: ["海風鎮", "Seabreeze Town"] };
+let lastPlace = null;
+function showPlace(name) {
+  const place = name === "shop" ? homeArea() : name;
+  if (place === lastPlace || !AREA_TITLE[place]) return;
+  lastPlace = place;
+  const el = $("place"); el.innerHTML = `<b>${AREA_TITLE[place][0]}</b><small>${AREA_TITLE[place][1]}</small>`;
+  el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");   // 重新播放動畫
+}
+const BLD_NAME = { b_shop: ["商店", "擺貨賣東西"], b_mayor: ["村長家", "主線任務"], b_work: ["工匠", "升級・買武器"], b_hut: ["漁夫小屋", ""],
+  b_townhall: ["鎮公所", ""], b_bakery: ["麵包店", ""], b_myshop: ["你的商店", "擺貨賣東西"], b_smith: ["鐵匠鋪", ""], b_light: ["燈塔", ""] };   // 門口有人物說明的，建築就只寫名字
+const NPC_ROLE = { mayor: "主線任務", craft: "升級・武器", granny: "種子・訂單", tailor: "做衣服", fisher: "釣魚", wheel: "交通工具", mage: "學魔法",
+  captain: "搭船 30 金", captain_t: "搭船・交通工具", t_mayor: "主線任務", keeper: "修燈塔", smith: "升級・武器", market: "種子・訂單", baker: "賣麵包" };
+const homeArea = () => S.flags.shopTown ? "town" : "village";   // 商店在哪一區（第四章會搬到海風鎮）
+const homeDoor = () => (S.flags.shopTown ? scenes.town.ents.find((e) => e.id === "b_myshop") : scenes.village.ents.find((e) => e.id === "b_shop")).door;
+const mapHere = () => scene.name === "shop" ? homeArea() : scene.name;   // 在商店裡就看商店所在的區域
 // full=false 是右上角的小地圖：只畫地形、建築、目標星星和你
 function drawMap(cv, name, s, full) {
   const here = mapHere(), sc = scenes[name];
-  const open = ["village", "forest", ...(S.flags.beach ? ["beach"] : []), ...(S.flags.mine ? ["mine"] : [])];
+  const open = ["village", "forest", ...(S.flags.beach ? ["beach"] : []), ...(S.flags.mine ? ["mine"] : []), ...(S.flags.town ? ["town"] : [])];
   const W = sc.w * s, H = sc.h * s, k = 3;   // 畫成 3 倍解析度，字在平板上才清楚
   cv.width = W * k; cv.height = H * k;
   const c = cv.getContext("2d"); c.scale(k, k); c.imageSmoothingEnabled = false;
@@ -2640,7 +2775,7 @@ function drawMap(cv, name, s, full) {
   const label = (text, x, y, bg, fg = "#fff") => {
     c.font = `bold ${fs}px sans-serif`; const w = c.measureText(text).width + 6;
     x = clamp(x - w / 2, 0, W - w); y = clamp(y, 0, H - lh);
-    if (hit(x, y, w)) y = clamp(y + 30, 0, H - lh);   // 名字擠在一起就改放到下面
+    const y0 = y; for (const dy of [lh + 2, -(lh + 2), 2 * (lh + 2), -2 * (lh + 2), 3 * (lh + 2)]) { if (!hit(x, y, w)) break; y = clamp(y0 + dy, 0, H - lh); }   // 名字擠在一起就換到上面或下面
     placed.push({ x, y, w });
     c.fillStyle = bg; c.fillRect(x, y, w, lh); c.fillStyle = fg; c.textBaseline = "top"; c.fillText(text, x + 3, y + 2);
   };
@@ -2652,14 +2787,14 @@ function drawMap(cv, name, s, full) {
   // 目標：在這張地圖上就畫星星，在別的區域就標出口
   const t = objectiveTarget();
   if (t && t.e) {
-    const tsc = t.sc === "shop" ? "village" : t.sc, te = t.sc === "shop" ? { tx: 8, ty: 8, w: 1, h: 1 } : t.e;
+    const tsc = t.sc === "shop" ? homeArea() : t.sc, te = t.sc === "shop" ? { tx: homeDoor().x, ty: homeDoor().y, w: 1, h: 1 } : t.e;
     let pt = null;
     if (tsc === name) pt = { x: (te.tx + te.w / 2) * s, y: (te.ty + te.h / 2) * s };
-    else { const via = name !== "village" ? "village" : tsc, w = sc.warps.find((x) => x.to === via); if (w) pt = { x: (w.x + w.w / 2) * s, y: w.y * s + (w.y > sc.h / 2 ? -14 : 30) }; }   // 星星放在出口名字旁邊
+    else { const w = sc.warps.find((x) => x.to === tsc) || sc.warps.find((x) => x.to === "village"); if (w) pt = { x: (w.x + w.w / 2) * s, y: w.y * s + (w.y > sc.h / 2 ? -14 : 30) }; }   // 星星放在出口名字旁邊
     if (pt) { c.fillStyle = "#ffd84a"; c.strokeStyle = "#2b1d14"; c.lineWidth = 2; c.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 5 : 11, a = -Math.PI / 2 + i * Math.PI / 5; c.lineTo(pt.x + Math.cos(a) * r, pt.y + Math.sin(a) * r); } c.closePath(); c.fill(); c.stroke(); }
   }
   if (name === here) {
-    const px = scene.name === "shop" ? 8.5 * s : player.x / T * s, py = scene.name === "shop" ? 9 * s : (player.y - 6) / T * s;
+    const px = scene.name === "shop" ? (homeDoor().x + 0.5) * s : player.x / T * s, py = scene.name === "shop" ? (homeDoor().y + 1) * s : (player.y - 6) / T * s;
     c.fillStyle = "#fff"; c.beginPath(); c.arc(px, py, 8, 0, 7); c.fill(); c.fillStyle = "#e0281c"; c.beginPath(); c.arc(px, py, 5.5, 0, 7); c.fill();
     if (full) label("你", px, py + 9, "#e0281c");
   }
@@ -2783,13 +2918,23 @@ const player = { x: 0, y: 0, dir: "down", moving: false, anim: 0, stepT: 0 };
 let currentTarget = null, fading = false;
 function fade(mid) { fading = true; $("fade").classList.add("on"); setTimeout(() => { mid(); $("fade").classList.remove("on"); setTimeout(() => { fading = false; }, 250); }, 260); }
 function enterScene(name, tx, ty, dir) {
-  scene = scenes[name]; S.scene = name;
+  scene = scenes[name]; S.scene = name; showPlace(name);
+  if (name === "shop" && S.flags.shopTown && S.main.step === 37) setTimeout(() => { toast("新商店開張了！貨架、工作台都一起搬過來了", "gold"); advanceMain(38); }, 400);
   player.x = tx * T; player.y = ty * T; if (dir) player.dir = dir;
   walkPath = null; walkTarget = null;
   customers = []; markDirty();
   if (name === "forest" && S.main.step >= MOBS_FROM && !S.skills.length) setTimeout(() => toast("森林裡有怪物！先去找入口旁的魔法師學魔法", "gold"), 600);
 }
 function applyFlags() {
+  const sh = scenes.shop, vv = scenes.village, tw = scenes.town;
+  if (sh && vv && tw) {
+    const moved = Boolean(S.flags.shopTown), d = moved ? { x: 21, y: 7 } : { x: 8, y: 8 };
+    Object.assign(sh.warps[0], { to: moved ? "town" : "village", tx: d.x + 0.5, ty: d.y + 1.7 });
+    vv.ents.find((e) => e.id === "b_shop").closed = moved; tw.ents.find((e) => e.id === "b_myshop").closed = !moved;
+    vv.warps = vv.warps.filter((w) => w.to !== "shop"); tw.warps = tw.warps.filter((w) => w.to !== "shop");
+    (moved ? tw : vv).warps.push({ x: d.x, y: d.y, w: 1, h: 1, to: "shop", tx: 8, ty: 9.6, dir: "up" });
+    rebuildSolid(vv); rebuildSolid(tw);
+  }
   const f = scenes.forest;
   const t = S.flags.bridge ? TILE.BRIDGE : TILE.BROKEN;
   rect(f, 36, 16, 37, 17, t); rebuildSolid(f);
@@ -2883,7 +3028,15 @@ function objectiveHint() {
   if (st === 33 && (worn() === "coat" || worn() === "jacket")) return "穿好了！去找村長參加冬日祭典";
   return MAIN_HINT[st];
 }
+// 海風鎮只能搭船：目標在對岸時，先帶去找船長
 function objectiveTarget() {
+  const t = mainTarget(); if (!t || !t.e) return t;
+  const far = (sc) => sc === "town" || (sc === "shop" && S.flags.shopTown);
+  if (far(t.sc) && !far(scene.name)) return { sc: "beach", e: scenes.beach.ents.find((x) => x.id === "captain") };
+  if (!far(t.sc) && far(scene.name)) return { sc: "town", e: scenes.town.ents.find((x) => x.id === "captain_t") };
+  return t;
+}
+function mainTarget() {
   const st = S.main.step, find = (sc, id) => ({ sc, e: scenes[sc].ents.find((x) => x.id === id) });
   const nearestNode = (kind, sc = "forest") => {
     const list = scenes[sc].ents.filter((e) => e.type === "node" && e.kind === kind && nodeReady(e) && (!e.deep || S.flags.cart));
@@ -2936,6 +3089,11 @@ function objectiveTarget() {
     case 25: return find("village", "mayor");
     case 26: return find("village", "tailor");
     case 27: return find("village", "plot0");
+    case 34: case 35: return find("beach", "captain");
+    case 36: return find("town", "t_mayor");
+    case 37: return find("shop", "counter");
+    case 38: return find("town", ["smith", "market", "baker"].find((id) => !(S.main.met || []).includes(id)) || "t_mayor");
+    case 39: return has({ iron: 5, coal: 3 }) ? find("town", "keeper") : nearestNode((S.inv.iron || 0) < 5 ? "iron" : "coal", "town");
     case 28: return worn() === "shirt" ? find("village", "tailor") : (S.inv.shirt || 0) >= 1 ? null : clothTarget("shirt", "village", "tailor");
     case 33: return worn() === "coat" || worn() === "jacket" ? find("village", "mayor") : (S.inv.coat || S.inv.jacket) ? null : clothTarget("jacket", "village", "mayor");
     case 24: return (S.inv.ring || 0) >= 1 ? find("village", "mayor") : has({ gem: 1, iron: 1 }) ? find("shop", "bench") : (S.inv.gem || 0) < 1 ? nearestNode("gem", "mine") : nearestNode("iron", "mine");
@@ -2946,8 +3104,7 @@ function objectiveTarget() {
 function arrowPoint() {
   const t = objectiveTarget(); if (!t || !t.e) return null;
   if (t.sc === scene.name) { const c = entCenter(t.e); return { x: c.x, y: t.e.ty * T - 4 }; }
-  const via = scene.name !== "village" ? "village" : t.sc;
-  const w = scene.warps.find((x) => x.to === via); if (!w) return null;
+  const w = scene.warps.find((x) => x.to === t.sc) || scene.warps.find((x) => x.to === "village"); if (!w) return null;
   return { x: (w.x + w.w / 2) * T, y: w.y * T - 2 };
 }
 
@@ -2999,6 +3156,12 @@ function drawEnt(e, cx, cy) {
   const x = e.tx * T - cx, y = e.ty * T - cy;
   switch (e.type) {
     case "building": return drawBuilding(e, x, y);
+    case "boat": {
+      const bx = Math.round(x), by = Math.round(y + Math.sin(clock * 2) * 1.2);   // 隨浪輕輕晃
+      P(g, bx + 4, by + 18, "#5a3a20", 56, 8); P(g, bx + 8, by + 26, "#4a2c18", 48, 4); P(g, bx + 4, by + 18, "#8b5a2b", 56, 3);
+      P(g, bx + 31, by - 14, "#5a3a20", 2, 32); P(g, bx + 14, by - 12, "#f4f4f8", 16, 26); P(g, bx + 34, by - 8, "#e8e8f0", 12, 20); P(g, bx + 14, by + 4, "#c8d0e0", 16, 2);
+      P(g, bx + 33, by - 18, "#d03a3a", 8, 5); return;
+    }
     case "npc": {
       if (e.fox) { g.drawImage(FOX, x, y + 1 + (Math.sin(clock * 3) > 0.6 ? -1 : 0)); return; }
       if (e.walker && !entVisible(e)) return;
@@ -3207,7 +3370,7 @@ function drawShelf(e, x, y) {
     for (let k = 0; k < n; k++) g.drawImage(ic, 0, 0, 16, 16, x + 1 + (k % 2) * 6, y - 7 + Math.floor(k / 2) * 10, 9, 9);
   } else { P(g, x + 4, y - 1, "#5a3a20", 8, 1); }  // 空貨架
 }
-const RIDE_LIFT = { skate: 2, bike: 4, horse: 8 };
+const RIDE_LIFT = { skate: 2, bike: 4, horse: 8, cloud: 12 };
 function drawVehicle(kind, sx, sy, dir, moving, anim) {
   const x = Math.round(sx), y = Math.round(sy), side = dir === "left" || dir === "right", f = dir === "left" ? -1 : 1;
   const H = (px, py, col, w = 1, h = 1) => P(g, f < 0 ? x - px - w : x + px, y + py, col, w, h);
@@ -3233,6 +3396,12 @@ function drawVehicle(kind, sx, sy, dir, moving, anim) {
       if (dir === "down") { P(g, x - 3, y - 22, "#a0683a", 6, 8); P(g, x - 2, y - 19, "#2b1d14"); P(g, x + 1, y - 19, "#2b1d14"); P(g, x - 1, y - 23, "#5a3a20", 2, 3); }
       else P(g, x - 2, y - 7, "#5a3a20", 4, 5);
     }
+  } else if (kind === "cloud") {
+    const by = y - 9 + Math.round(Math.sin(performance.now() / 300) * 1.5);   // 輕輕上下飄
+    g.fillStyle = "#0002"; g.fillRect(x - 10, y - 1, 20, 2);
+    for (const [ox, oy, r] of [[-8, 2, 4], [8, 2, 4], [-4, -1, 5], [4, -1, 5], [0, -3, 5], [0, 3, 4]]) circle(g, x + ox, by + oy, r + 1, "#a8c8e8");
+    for (const [ox, oy, r] of [[-8, 2, 4], [8, 2, 4], [-4, -1, 5], [4, -1, 5], [0, -3, 5], [0, 3, 4]]) circle(g, x + ox, by + oy, r, "#ffffff");
+    P(g, x - 10, by + 4, "#dce8f4", 20, 2); P(g, x - 4, by - 6, "#ffffff", 3, 1);
   }
 }
 function drawSwing(cx, cy) {
@@ -3343,7 +3512,8 @@ function render() {
   for (const e of scene.ents) list.push({ y: e.type === "plot" || e.type === "dock" ? e.ty * T : (e.ty + e.h) * T, e });   // 田地與碼頭貼地，角色可以站在上面
   for (const c of customers) list.push({ y: c.y, c });
   for (const a of foes()) list.push({ y: a.y, a });
-  list.push({ y: player.y, p: true });
+  const flying = S.ride && scene.outdoor && VEHICLES[S.ride].fly;
+  list.push({ y: flying ? Infinity : player.y, p: true });   // 飛行時畫在最上層，不會被房子、樹擋住
   list.sort((a, b) => a.y - b.y);
   for (const it of list) {
     if (it.p) {
@@ -3426,8 +3596,10 @@ function update(dt) {
     player.anim += dt;
     if (Math.abs(v.x) > Math.abs(v.y)) player.dir = v.x > 0 ? "right" : "left"; else player.dir = v.y > 0 ? "down" : "up";
     const stepLen = Math.min(sp * dt, lim);
-    const nx = player.x + v.x * stepLen; if (!blocked(nx, player.y)) player.x = nx;
-    const ny = player.y + v.y * stepLen; if (!blocked(player.x, ny)) player.y = ny;
+    const free = (riding && riding.fly) || blocked(player.x, player.y);   // 飛行中，或在障礙物上下龍時，可以穿過去
+    const ok = (x, y) => free ? x >= 6 && y >= 6 && x <= scene.w * T - 6 && y <= scene.h * T : !blocked(x, y);
+    const nx = player.x + v.x * stepLen; if (ok(nx, player.y)) player.x = nx;
+    const ny = player.y + v.y * stepLen; if (ok(player.x, ny)) player.y = ny;
     player.stepT += dt; if (player.stepT > (riding ? 0.5 : 0.32)) { player.stepT = 0; Sound.sfx("step"); }
     markDirty();
     for (const w of scene.warps) {
@@ -3533,7 +3705,7 @@ function loop(now) {
 }
 
 /* ---------------- 開始／登出 ---------------- */
-function showGameUI(on) { $("menu-btns").hidden = true; $("menu-toggle").setAttribute("aria-expanded", "false");
+function showGameUI(on) { if (!on) lastPlace = null; $("menu-btns").hidden = true; $("menu-toggle").setAttribute("aria-expanded", "false");
   for (const id of ["hud", "objective", "minimap", "menu-toggle", "joy-zone", "btn-a"]) $(id).hidden = !on; if (!on) { raid = null; mobs = []; $("btn-skill").hidden = true; $("alarm").hidden = true; for (const sp of speeches) sp.el.remove(); speeches.length = 0; } }
 function startGame(save) {
   S = save;
@@ -3543,6 +3715,7 @@ function startGame(save) {
   S.look = { ...S.look, hair: (S.look && S.look.hair) || HAIRS[0], shirt: (S.look && S.look.shirt) || SHIRTS[1] };   // 缺頭髮或衣服顏色時角色會變透明
   for (const k of Object.keys(UPGRADES)) if (!S.up[k]) S.up[k] = 1;
   while (S.farm.length < FARM_PLOTS) S.farm.push({ c: null, g: 0, wet: false, dry: false });
+  S.vehicles = S.vehicles.filter((v) => VEHICLES[v]); if (S.ride && !VEHICLES[S.ride]) S.ride = null;   // 拿掉已經不存在的交通工具（例如試做過的飛龍）
   // 老師送每人一台腳踏車（只送一次；已有更快的小馬就不換下來）
   let gotBike = false;
   if (!S.flags.freeBike) {
@@ -3550,7 +3723,10 @@ function startGame(save) {
     if (!S.vehicles.includes("bike")) S.vehicles.push("bike");
     if (!S.ride || VEHICLES[S.ride].speed < VEHICLES.bike.speed) S.ride = "bike";
   }
-  scenes.village = buildVillage(); scenes.forest = buildForest(); scenes.shop = buildShop(); scenes.beach = buildBeach(); scenes.mine = buildMine(); applyFlags();
+  // 老師只送 96 號一朵會飛的雲（只送一次）
+  let gotCloud = false;
+  if (S.seat === "96" && !S.flags.cloud) { S.flags.cloud = true; gotCloud = true; if (!S.vehicles.includes("cloud")) S.vehicles.push("cloud"); S.ride = "cloud"; }
+  scenes.village = buildVillage(); scenes.forest = buildForest(); scenes.shop = buildShop(); scenes.beach = buildBeach(); scenes.mine = buildMine(); scenes.town = buildTown(); applyFlags();
   raid = null; mobs = []; speeches.length = 0; $("bubbles").innerHTML = "";
   ensureDaily();
   enterScene(S.scene in scenes ? S.scene : "village", S.x / T, S.y / T, S.dir);
@@ -3558,6 +3734,7 @@ function startGame(save) {
   $("title").hidden = true; showGameUI(true); resize();
   Sound.init(); Sound.apply(); Sound.startMusic();
   writeSave();
+  if (gotCloud) setTimeout(() => toast("老師送你一朵會飛的雲（cloud）！在戶外可以飛過任何障礙物", "gold"), 2600);
   if (gotBike) setTimeout(() => toast("老師送你一台腳踏車（bike）！在戶外會自動騎，跑得更快", "gold"), 1200);
   if (S.main.step === 0) {
     const go = () => setTimeout(() => toast("走到村長身邊（黃色箭頭），按右下角的按鈕說話", "gold"), 300);
