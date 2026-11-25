@@ -206,6 +206,9 @@ body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,san
 #joy-base{background:#28303855;border:3px solid #f8f8f088}
 #joy-knob{background:#d8d8d0;border:3px solid var(--win-line);box-shadow:inset -3px -3px 0 #a8a8a0}
 #btn-a{background:#c83850;border:4px solid #681828;color:#fff;text-shadow:2px 2px 0 #681828;box-shadow:inset -4px -5px 0 #901c34,0 5px 0 #0007}
+#btn-skill{position:fixed;right:calc(40px + var(--sar));bottom:calc(150px + var(--sab));width:80px;height:80px;border-radius:50%;z-index:5;font-size:18px;font-weight:bold;
+  background:#7a4ac8;border:4px solid #3a1a70;color:#fff;text-shadow:2px 2px 0 #3a1a70;box-shadow:inset -4px -5px 0 #5a2aa0,0 5px 0 #0007}
+#btn-skill:active{transform:translateY(3px)}
 #btn-a.dim{background:#888c90;border-color:#484c50;text-shadow:2px 2px 0 #484c50;box-shadow:inset -4px -5px 0 #686c70,0 5px 0 #0007}
 
 /* ---- 提示：小視窗，從上方滑入 ---- */
@@ -321,6 +324,7 @@ table.words{background:#fff}
   <button data-open="logout" class="menu-logout">登出</button>
 </div>
 <div id="joy-zone" hidden><div id="joy-base" class="idle"><div id="joy-knob"></div></div></div>
+<button id="btn-skill" hidden>魔法</button>
 <button id="btn-a" class="dim" hidden><span id="btn-a-label">互動</span></button>
 <div id="toasts"></div>
 <div id="alarm" hidden></div>
@@ -755,6 +759,19 @@ const ANIMALS = {
   raccoon: { name: "浣熊", en: "raccoon", hp: 2, speed: 26, reward: 9 },
   crow:    { name: "烏鴉", en: "crow",    hp: 1, speed: 32, reward: 6 },
 };
+// 森林怪物：主線打完第一次入侵後出現，打倒有金幣，過一陣子會再冒出來（不存檔）
+const MOBS_FROM = 15;
+const MOBS = {
+  slime: { name: "史萊姆", en: "slime", hp: 3, speed: 14, reward: 8 },
+  bat:   { name: "蝙蝠",   en: "bat",   hp: 2, speed: 24, reward: 6 },
+};
+const foeDef = (a) => ANIMALS[a.kind] || MOBS[a.kind];
+// 魔法技能：跟森林的魔法師學（連續答對 3 題），放魔法前要先答對 1 題
+const SKILLS = {
+  fire:    { name: "火球", en: "fire",    cd: 6,  desc: "打最近的一隻，傷害 3" },
+  ice:     { name: "冰凍", en: "ice",     cd: 10, desc: "附近的怪物全部凍住 5 秒" },
+  thunder: { name: "閃電", en: "thunder", cd: 12, desc: "附近的怪物全部受到 2 傷害" },
+};
 // 路人閒聊（頭上會冒出對話框）
 const CHATTER = ["Hi!", "Hello!", "今天天氣真好～", "Nice day!", "去買菜囉～", "好想吃蛋糕", "♪ La la la ♪", "Good morning!", "等一下去釣魚！", "Yummy!", "好忙好忙！", "See you!"];
 const CHATS = [
@@ -1072,6 +1089,7 @@ function buildForest() {
   for (const [x, y] of [[47, 18], [41, 26]]) node("hive", x, y);
   for (const [x, y] of [[4, 5], [33, 28], [48, 6]]) node("chest", x, y);
   addEnt(sc, { id: "fox", type: "npc", name: "小狐狸", fox: true, tx: 24, ty: 6, solid: true, clearTo: G });
+  addEnt(sc, { id: "mage", type: "npc", name: "魔法師", tx: 6, ty: 15, solid: true, dir: "down", look: { hair: "#e8e8f0", shirt: "#5a3aa0", pants: "#2a1a50" } });
   for (const [i, x, y] of [[0, 4, 26], [1, 31, 23], [2, 27, 4]]) addEnt(sc, { id: `lost_${i}`, type: "lost", idx: i, tx: x, ty: y, clearTo: G });
   walker(sc, "w_travel", "旅人", 18, 16, { hair: "#3a3a6a", shirt: "#8a5a3a" }, ["Hello, friend! 我正在環遊世界。", "森林的另一邊有蜂蜜喔，可惜橋壞了。", "Good luck! 祝你好運！"]);
   sc.warps.push({ x: 0, y: 16, w: 1, h: 2, to: "village", tx: 37.6, ty: 13.4, dir: "left" });
@@ -1152,7 +1170,7 @@ function newSave(seat, look) {
     daily: null, main: { step: 0, foxStarted: false, found: [false, false, false] }, flags: { repaired: false, bridge: false },
     talkedToday: [], npcQuizDay: {}, counters: { day: 0, sales: 0 },
     stats: {}, log: [], settings: { music: 0.4, sfx: 0.7, speak: false }, recentQ: [], fishDay: { day: -1, n: 0 },
-    vehicles: [], ride: null, weapons: [], weapon: null, nextRaid: null, wear: null,
+    vehicles: [], ride: null, weapons: [], weapon: null, nextRaid: null, wear: null, skills: [],
   };
 }
 /* ---------------- 雲端存檔（Google 表單寫入、回應試算表讀取） ----------------
@@ -1445,7 +1463,7 @@ function buildQuestion(word, forceType) {
   const options = shuffle([word, ...distract]);
   return { word, type: dir, prompt: dir === "en2zh" ? word.en : word.zh, options: options.map((o) => ({ key: o.key, text: show(o) })) };
 }
-const CTX_LABEL = { harvest: "收成挑戰", gather: "採集挑戰", chest: "寶箱挑戰", npc: "村民的問題", shop: "顧客的問題", tutorial: "第一個挑戰", craft: "製作挑戰", practice: "單字練習" };
+const CTX_LABEL = { harvest: "收成挑戰", gather: "採集挑戰", chest: "寶箱挑戰", npc: "村民的問題", shop: "顧客的問題", tutorial: "第一個挑戰", craft: "製作挑戰", practice: "單字練習", skill: "魔法挑戰" };
 const TYPE_HINT = { en2zh: "這個英文是什麼意思？", zh2en: "這個中文的英文是什麼？" };
 // cb(result)：'correct' | 'wrong' | 'none'（沒有出題）
 function askQuestion(context, opts, cb) {
@@ -1701,6 +1719,13 @@ function talkNpc(e) {
       : talk("礦工老石", "礦坑深處好冷啊……（外套＝4 塊布＋2 個貝殼，在工作台做）");
     if (npcQuiz(e, "礦工老石")) return;
     return talk("礦工老石", pick(NPC_IDLE.miner));
+  }
+  if (e.id === "mage") {
+    const next = Object.keys(SKILLS).find((id) => !S.skills.includes(id));
+    if (!next) return talk("魔法師", "三種魔法你都學會了！\n看到怪物時，按右下角紫色的「魔法」按鈕。");
+    const k = SKILLS[next];
+    return talk("魔法師", ["森林裡出現史萊姆和蝙蝠了！我來教你魔法。", `下一個魔法是「${k.name} ${k.en}」：${k.desc}。\n連續答對 3 題英文就學會！`],
+      [{ label: `學${k.name}`, fn: () => learnSkill(next, 0) }, { label: "等一下", alt: true }]);
   }
   if (e.id === "fox") {
     if (st === 7 && !S.main.foxStarted) return talk("小狐狸", ["嗚嗚……我把 3 個寶物弄丟在森林裡了。", "地上會閃閃發光的就是！可以幫我找回來嗎？"], null, () => { S.main.foxStarted = true; markDirty(); toast("在森林裡找 3 個閃閃發光的寶物", "gold"); });
@@ -2444,6 +2469,7 @@ joyZone.addEventListener("pointermove", (ev) => {
 function joyIdle() { const b = document.getElementById("joy-base"), k = document.getElementById("joy-knob"); b.style.left = ""; b.style.top = ""; b.classList.add("idle"); k.style.transform = ""; }
 const joyEnd = (ev) => { if (ev.pointerId !== input.joyId) return; input.joyId = null; input.jx = input.jy = 0; joyIdle(); };
 joyZone.addEventListener("pointerup", joyEnd); joyZone.addEventListener("pointercancel", joyEnd);
+$("btn-skill").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); if (!modalOpen() && S) openSkills(); });
 $("btn-a").addEventListener("pointerdown", (ev) => { ev.preventDefault(); Sound.init(); Sound.startMusic(); if (!modalOpen()) interact(currentTarget); });
 document.querySelectorAll("#menu-btns button").forEach((b) => b.addEventListener("click", () => {
   Sound.init(); Sound.sfx("click");
@@ -2476,7 +2502,9 @@ function updateRaid(dt) {
   for (const a of raid.animals) {
     const def = ANIMALS[a.kind];
     if (a.delay > 0) { a.delay -= dt; continue; }
-    a.t += dt; if (a.hitT > 0) a.hitT -= dt;
+    if (a.hitT > 0) a.hitT -= dt;
+    if (a.frozen > 0) { a.frozen -= dt; continue; }   // 被冰凍魔法凍住
+    a.t += dt;
     if (a.state === "come") {
       if (!a.target) a.target = pickRaidTarget(a);
       const dx = a.target.x - a.x, dy = a.target.y - a.y, d = Math.hypot(dx, dy), sp = def.speed * dt;
@@ -2521,12 +2549,13 @@ function maybeScheduleRaid() {
     if (!late) startRaid(false);
   }
 }
+function foes() { return raid && scene.name === "village" ? raid.animals : scene.name === "forest" ? mobs : []; }
+const liveFoe = (a) => !(a.delay > 0) && a.state !== "flee" && !a.gone;
 function animalInRange() {
-  if (!raid || scene.name !== "village") return null;
   const range = S.weapon ? WEAPONS[S.weapon].range : 22;
   let best = null, bd = 1e9;
-  for (const a of raid.animals) {
-    if (a.delay > 0 || a.state === "flee") continue;
+  for (const a of foes()) {
+    if (!liveFoe(a)) continue;
     const d = Math.hypot(a.x - player.x, a.y - player.y);
     if (d <= range && d < bd) { bd = d; best = a; }
   }
@@ -2540,22 +2569,86 @@ function attackAnimal(a) {
   attackCd = w.cd;
   const dx = a.x - player.x, dy = a.y - player.y;
   player.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
-  if (w.ranged) { Sound.sfx("bow"); fx.push({ k: "arrow", sc: "village", x: player.x, y: player.y - 8, x1: a.x, y1: a.y - 6, t: 0, life: 0.18 }); }
+  if (w.ranged) { Sound.sfx("bow"); fx.push({ k: "arrow", sc: scene.name, x: player.x, y: player.y - 8, x1: a.x, y1: a.y - 6, t: 0, life: 0.18 }); }
   else { Sound.sfx("swish"); swing = 0.2; }
-  setTimeout(() => {
-    if (a.state === "flee" || a.gone) return;
-    a.hp -= w.dmg; a.hitT = 0.25; Sound.sfx("hit"); burst(a.x, a.y - 6, "#ffffff");
-    const d = Math.hypot(dx, dy) || 1; a.x += dx / d * 6; a.y += dy / d * 6;
-    if (a.hp <= 0) {
-      a.state = "flee"; raid.scared++; const rw = ANIMALS[a.kind].reward; S.coins += rw; Sound.sfx("coin");
-      popAt(a.x, a.y - 10, "coin", `+${rw}`); say(a, "哇！快逃！", 1.6, true); markDirty();
-    } else { a.state = "come"; say(a, "好痛！", 1, true); }
-  }, w.ranged ? 180 : 90);
+  setTimeout(() => hurtFoe(a, w.dmg, "#ffffff"), w.ranged ? 180 : 90);
+}
+function hurtFoe(a, dmg, col) {
+  if (!liveFoe(a)) return;
+  a.hp -= dmg; a.hitT = 0.25; Sound.sfx("hit"); burst(a.x, a.y - 6, col);
+  const dx = a.x - player.x, dy = a.y - player.y, d = Math.hypot(dx, dy) || 1, nx = a.x + dx / d * 6, ny = a.y + dy / d * 6;
+  if (!MOBS[a.kind] || !blocked(nx, ny)) { a.x = nx; a.y = ny; }
+  if (a.hp > 0) { if (ANIMALS[a.kind]) a.state = "come"; say(a, "好痛！", 1, true); return; }
+  const rw = foeDef(a).reward; S.coins += rw; Sound.sfx("coin"); popAt(a.x, a.y - 10, "coin", `+${rw}`); markDirty();
+  if (MOBS[a.kind]) { a.gone = true; burst(a.x, a.y - 6, "#b07ae0"); return; }
+  a.state = "flee"; raid.scared++; say(a, "哇！快逃！", 1.6, true);
+}
+
+/* ---------------- 森林怪物 ---------------- */
+let mobs = [], mobTimer = 0;
+const MOB_SPOTS = [[9, 8], [22, 7], [11, 26], [27, 25], [29, 15], [20, 16], [16, 17], [24, 17]];
+function spawnMob() {
+  const f = scenes.forest, [tx, ty] = pick(MOB_SPOTS), x = tx * T + 8, y = ty * T + 12;
+  if (f.solid[ty * f.w + tx] || mobs.some((m) => m.home.x === x && m.home.y === y) || (scene === f && Math.hypot(x - player.x, y - player.y) < 80)) return;
+  const kind = pick(Object.keys(MOBS));
+  mobs.push({ kind, x, y, home: { x, y }, hp: MOBS[kind].hp, state: "come", t: 0, hitT: 0, dir: 1, frozen: 0 });
+}
+function updateMobs(dt) {
+  if (S.main.step < MOBS_FROM) { mobs = []; return; }
+  mobs = mobs.filter((m) => !m.gone);
+  if (mobs.length < 4 && (mobTimer -= dt) <= 0) { mobTimer = 6; spawnMob(); }
+  if (scene.name !== "forest") return;
+  for (const m of mobs) {
+    m.t += dt; if (m.hitT > 0) m.hitT -= dt;
+    if (m.frozen > 0) { m.frozen -= dt; continue; }
+    if (!m.to || (m.wait -= dt) <= 0) { m.to = { x: m.home.x + (rand() - 0.5) * 64, y: m.home.y + (rand() - 0.5) * 48 }; m.wait = 2 + rand() * 3; }
+    const dx = m.to.x - m.x, dy = m.to.y - m.y, d = Math.hypot(dx, dy), s = Math.min(MOBS[m.kind].speed * dt, d);
+    if (d < 1) continue;
+    if (Math.abs(dx) > 0.5) m.dir = dx > 0 ? 1 : -1;
+    const nx = m.x + dx / d * s, ny = m.y + dy / d * s;
+    if (!blocked(nx, ny)) { m.x = nx; m.y = ny; } else m.to = null;
+  }
+}
+
+/* ---------------- 魔法技能 ---------------- */
+const skillReady = {};   // 技能 id → 冷卻結束的時間（毫秒）
+function learnSkill(id, n) {
+  const k = SKILLS[id];
+  askQuestion("skill", { force: true, label: `學${k.name} ${n + 1}/3` }, (r) => {
+    if (r === "wrong") return talk("魔法師", "差一點點！魔法要連續答對 3 題，再來一次吧。", [{ label: "再試一次", fn: () => learnSkill(id, 0) }, { label: "等一下", alt: true }]);
+    if (n < 2 && r === "correct") return learnSkill(id, n + 1);
+    if (!S.skills.includes(id)) S.skills.push(id);
+    writeSave(); Sound.sfx("up"); speak(k.en, true);
+    talk("魔法師", [`太棒了！你學會了「${k.name} ${k.en}」！`, "看到怪物時，按右下角紫色的「魔法」按鈕。\n唸對咒語（答對英文題）魔法才會成功喔！"]);
+  });
+}
+function openSkills() {
+  const now = Date.now();
+  const rows = S.skills.map((id) => {
+    const k = SKILLS[id], left = Math.ceil(((skillReady[id] || 0) - now) / 1000);
+    return `<div class="row"><div class="grow"><div class="t">${k.name} <span class="muted">${k.en}</span></div><div class="d">${k.desc}</div></div>
+      ${left > 0 ? `<button class="btn small alt" disabled>${left} 秒</button>` : `<button class="btn small" data-act="c_${id}">施放</button>`}</div>`;
+  }).join("");
+  const h = { __closable: true };
+  for (const id of S.skills) h["c_" + id] = () => { closeModal(); askQuestion("skill", { force: true, label: SKILLS[id].name }, (r) => castSkill(id, r !== "wrong")); };
+  openModal(`${closeBtn}<h2>魔法</h2><p class="muted">答對英文題目，魔法才會成功！</p><div class="list">${rows}</div>`, h);
+}
+function castSkill(id, ok) {
+  const k = SKILLS[id];
+  if (!ok) { skillReady[id] = Date.now() + 3000; return toast("咒語唸錯了，魔法失敗！3 秒後再試", "bad"); }
+  skillReady[id] = Date.now() + k.cd * 1000;
+  const near = foes().filter((a) => liveFoe(a) && Math.hypot(a.x - player.x, a.y - player.y) < 140)
+    .sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y));
+  if (!near.length) { skillReady[id] = 0; return toast("附近沒有怪物，走近一點再放"); }
+  say(player, k.en + "!", 1.5); speak(k.en);
+  if (id === "fire") { const a = near[0]; fx.push({ k: "arrow", sc: scene.name, x: player.x, y: player.y - 8, x1: a.x, y1: a.y - 6, t: 0, life: 0.25 }); setTimeout(() => hurtFoe(a, 3, "#ff7a1a"), 250); }
+  if (id === "ice") for (const a of near) { a.frozen = 5; burst(a.x, a.y - 6, "#9fd8ff"); }
+  if (id === "thunder") { shakeT = 0.3; for (const a of near) hurtFoe(a, 2, "#ffe84a"); }
 }
 function drawAnimal(a, cx, cy) {
   if (a.delay > 0) return;
   const x = Math.round(a.x - cx), y = Math.round(a.y - cy), f = a.dir < 0, flash = a.hitT > 0;
-  const R = (px, py, col, w = 1, h = 1) => P(g, f ? x - px - w : x + px, y + py, flash ? "#ffffff" : col, w, h);
+  const R = (px, py, col, w = 1, h = 1) => P(g, f ? x - px - w : x + px, y + py, flash ? "#ffffff" : a.frozen > 0 && col !== "#1a1a1a" ? "#9fd8ff" : col, w, h);
   const bob = (a.state === "eat" ? Math.round(Math.sin(a.t * 14)) : Math.floor(a.t * 8) % 2);
   g.fillStyle = "#0003"; g.fillRect(x - 6, y - 1, 12, 2);
   if (a.kind === "boar") {
@@ -2564,12 +2657,20 @@ function drawAnimal(a, cx, cy) {
   } else if (a.kind === "raccoon") {
     R(-6, -8 - bob, "#6a6a72", 10, 6); R(3, -10 - bob, "#8a8a92", 5, 6); R(4, -8 - bob, "#2b2b30", 4, 2); R(5, -8 - bob, "#fff"); R(8, -7 - bob, "#1a1a1a");
     R(-10, -9 - bob, "#8a8a92", 4, 2); R(-11, -9 - bob, "#2b2b30", 1, 2); R(-8, -9 - bob, "#2b2b30", 1, 2); R(-4, -2, "#2b2b30", 2, 2); R(1, -2, "#2b2b30", 2, 2);
+  } else if (a.kind === "slime") {
+    const sq = Math.floor(a.t * 4) % 2;
+    R(-6, -7 + sq, "#2a6a2a", 12, 7 - sq); R(-5, -8 + sq, "#5ac05a", 10, 7 - sq); R(-3, -9 + sq, "#5ac05a", 6, 1); R(-3, -6 + sq, "#a8f0a8", 2, 1);
+    R(-2, -5 + sq, "#1a1a1a"); R(2, -5 + sq, "#1a1a1a");
+  } else if (a.kind === "bat") {
+    const fl = Math.floor(a.t * 10) % 2;
+    R(-2, -13, "#3a2a4a", 5, 4); R(-1, -12, "#e04040"); R(2, -12, "#e04040");
+    R(-7, fl ? -15 : -12, "#3a2a4a", 5, 2); R(3, fl ? -15 : -12, "#3a2a4a", 5, 2);
   } else {
     const fl = Math.floor(a.t * 10) % 2, hy = a.state === "eat" ? 0 : -6;
     R(-4, -7 + hy, "#1a1a28", 8, 5); R(3, -9 + hy, "#1a1a28", 4, 4); R(7, -8 + hy, "#e0b040", 2, 1); R(5, -8 + hy, "#ffffff");
     R(-3, (fl ? -11 : -5) + hy, "#2b2b40", 6, 3); R(-6, -6 + hy, "#2b2b40", 2, 2);
   }
-  if (a.hp < ANIMALS[a.kind].hp && a.state !== "flee") { P(g, x - 7, y - 18, "#2b1d14", 14, 3); P(g, x - 6, y - 17, "#e0281c", Math.round(12 * a.hp / ANIMALS[a.kind].hp), 1); }
+  const mh = foeDef(a).hp; if (a.hp < mh && a.state !== "flee") { P(g, x - 7, y - 18, "#2b1d14", 14, 3); P(g, x - 6, y - 17, "#e0281c", Math.round(12 * a.hp / mh), 1); }
 }
 
 /* ---------------- 對話框（路人閒聊、動物叫聲；用 HTML 顯示，字比較清楚） ---------------- */
@@ -2578,7 +2679,7 @@ function say(who, text, life = 3, animal = false) {
   for (let i = speeches.length - 1; i >= 0; i--) if (speeches[i].who === who) { speeches[i].el.remove(); speeches.splice(i, 1); }
   const el = document.createElement("div"); el.className = "say-bub" + (animal ? " animal" : ""); el.textContent = text;
   $("bubbles").appendChild(el);
-  speeches.push({ who, text, t: 0, life, el, sc: animal ? "village" : scene.name });
+  speeches.push({ who, text, t: 0, life, el, sc: animal && !MOBS[who.kind] ? "village" : scene.name });
 }
 function speechPos(w) { return w.px !== undefined ? { x: w.px, y: w.py - 22 } : { x: w.x, y: w.y - (w.kind === "crow" ? 22 : 16) }; }
 function updateSpeeches(dt) {
@@ -2622,6 +2723,7 @@ function enterScene(name, tx, ty, dir) {
   player.x = tx * T; player.y = ty * T; if (dir) player.dir = dir;
   walkPath = null; walkTarget = null;
   customers = []; markDirty();
+  if (name === "forest" && S.main.step >= MOBS_FROM && !S.skills.length) setTimeout(() => toast("森林裡有怪物！先去找入口旁的魔法師學魔法", "gold"), 600);
 }
 function applyFlags() {
   const f = scenes.forest;
@@ -2654,6 +2756,7 @@ const DIRV = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
 function entCenter(e) { return { x: (e.tx + e.w / 2) * T, y: (e.ty + e.h / 2) * T }; }
 function entVisible(e) {
   if (e.walker) { const h = minOfDay() / 60; return h >= 6 && h < 21; }   // 晚上村民回家
+  if (e.id === "mage") return S.main.step >= MOBS_FROM;
   if (e.type === "lost") return S.main.step === 7 && S.main.foxStarted && !S.main.found[e.idx];
   return true;
 }
@@ -3175,7 +3278,7 @@ function render() {
   const list = [];
   for (const e of scene.ents) list.push({ y: e.type === "plot" || e.type === "dock" ? e.ty * T : (e.ty + e.h) * T, e });   // 田地與碼頭貼地，角色可以站在上面
   for (const c of customers) list.push({ y: c.y, c });
-  if (raid && scene.name === "village") for (const a of raid.animals) list.push({ y: a.y, a });
+  for (const a of foes()) list.push({ y: a.y, a });
   list.push({ y: player.y, p: true });
   list.sort((a, b) => a.y - b.y);
   for (const it of list) {
@@ -3238,7 +3341,7 @@ function update(dt) {
   if (gameDay() !== prevDay) { ensureDaily(); toast(`第 ${gameDay() + 1} 天開始了！每日任務已更新`, "gold"); }
   updateFx(dt);
   updateWalkers(dt);
-  updateRaid(dt); updateChatter(dt);
+  updateRaid(dt); updateMobs(dt); updateChatter(dt);
   if (attackCd > 0) attackCd -= dt; if (swing > 0) swing -= dt;
   const busy = updateAction(dt);
   const riding = S.ride && scene.outdoor ? VEHICLES[S.ride] : null;
@@ -3321,8 +3424,8 @@ cv.addEventListener("pointerdown", (ev) => {
   Sound.init(); Sound.startMusic();
   const wx = ev.clientX / scale + cam.x, wy = ev.clientY / scale + cam.y;
   const tx = Math.floor(wx / T), ty = Math.floor(wy / T);
-  if (raid && scene.name === "village") {
-    const a = raid.animals.find((a) => a.delay <= 0 && a.state !== "flee" && Math.abs(a.x - wx) < 13 && wy - a.y < 6 && a.y - wy < 26);
+  {
+    const a = foes().find((a) => liveFoe(a) && Math.abs(a.x - wx) < 13 && wy - a.y < 6 && a.y - wy < 26);
     if (a) {
       const range = S.weapon ? WEAPONS[S.weapon].range : 22;
       if (Math.hypot(a.x - player.x, a.y - player.y) <= range + 6) { attackAnimal(a); return; }
@@ -3353,6 +3456,7 @@ function updateHud() {
   const ob = $("objective"); const txt = objectiveText(), hint = objectiveHint(), key = txt + "|" + hint;
   if (ob.dataset.t !== key) { ob.dataset.t = key; ob.innerHTML = `<small>目標</small>${esc(txt)}<span class="ob-hint">提示：${esc(hint)}</span>`; }
   $("alarm").hidden = !raid; ob.classList.toggle("raid", Boolean(raid));
+  $("btn-skill").hidden = !(S.skills.length && foes().some(liveFoe));
   const a = $("btn-a"); a.classList.toggle("dim", !currentTarget);
   const lbl = targetLabel(currentTarget); if ($("btn-a-label").textContent !== lbl) $("btn-a-label").textContent = lbl;
 }
@@ -3363,7 +3467,7 @@ function loop(now) {
 }
 
 /* ---------------- 開始／登出 ---------------- */
-function showGameUI(on) { for (const id of ["hud", "objective", "menu-btns", "joy-zone", "btn-a"]) $(id).hidden = !on; if (!on) { raid = null; $("alarm").hidden = true; for (const sp of speeches) sp.el.remove(); speeches.length = 0; } }
+function showGameUI(on) { for (const id of ["hud", "objective", "menu-btns", "joy-zone", "btn-a"]) $(id).hidden = !on; if (!on) { raid = null; mobs = []; $("btn-skill").hidden = true; $("alarm").hidden = true; for (const sp of speeches) sp.el.remove(); speeches.length = 0; } }
 function startGame(save) {
   S = save;
   // 舊存檔補欄位
@@ -3379,7 +3483,7 @@ function startGame(save) {
     if (!S.ride || VEHICLES[S.ride].speed < VEHICLES.bike.speed) S.ride = "bike";
   }
   scenes.village = buildVillage(); scenes.forest = buildForest(); scenes.shop = buildShop(); scenes.beach = buildBeach(); scenes.mine = buildMine(); applyFlags();
-  raid = null; speeches.length = 0; $("bubbles").innerHTML = "";
+  raid = null; mobs = []; speeches.length = 0; $("bubbles").innerHTML = "";
   ensureDaily();
   enterScene(S.scene in scenes ? S.scene : "village", S.x / T, S.y / T, S.dir);
   if (blocked(player.x, player.y)) { const sp = scene.spawn; player.x = sp.tx * T; player.y = sp.ty * T; }
